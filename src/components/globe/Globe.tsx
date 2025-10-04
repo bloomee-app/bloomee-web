@@ -4,9 +4,7 @@ import { useRef, useMemo, Suspense, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { Hotspot } from '@/lib/data'
 import { useAppStore } from '@/lib/store'
-import Hotspots from '@/components/globe/Hotspots'
 
 // Starfield component
 function Starfield() {
@@ -62,7 +60,7 @@ function Starfield() {
 }
 
 // Earth Globe component with custom shaders and mouse interactivity
-function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => void }) {
+function EarthGlobe() {
   const globeGroupRef = useRef<THREE.Group>(null)
   const wireframeRef = useRef<THREE.Mesh>(null)
   const pointsRef = useRef<THREE.Points>(null)
@@ -349,10 +347,9 @@ function GlobeLoading() {
 // Main Globe component
 interface GlobeProps {
   className?: string
-  onHotspotClick: (hotspot: Hotspot) => void
 }
 
-export default function Globe({ className, onHotspotClick }: GlobeProps) {
+export default function Globe({ className }: GlobeProps) {
   const { cameraPosition } = useAppStore()
 
   return (
@@ -383,10 +380,7 @@ export default function Globe({ className, onHotspotClick }: GlobeProps) {
           <Starfield />
           
           {/* Earth Globe */}
-          <EarthGlobe onHotspotClick={onHotspotClick} />
-
-          {/* Hotspot */}
-          <Hotspots onHotspotClick={onHotspotClick} />
+          <EarthGlobe />
           
           {/* Orbit Controls */}
           <OrbitControls 
@@ -395,6 +389,8 @@ export default function Globe({ className, onHotspotClick }: GlobeProps) {
             enableZoom={true}
             enablePan={true}
             enableRotate={true}
+            minDistance={2.5}  // Batasan zoom in - tidak bisa terlalu dekat
+            maxDistance={26.0}  
           />
         </Canvas>
       </Suspense>

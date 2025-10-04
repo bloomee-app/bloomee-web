@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 
 export default function ComparisonPanel() {
-  const { isPanelOpen, selectedLocation, setPanelOpen } = useAppStore()
+  const { isPanelOpen, setPanelOpen } = useAppStore()
 
-  if (!isPanelOpen || !selectedLocation) return null
+  if (!isPanelOpen) return null
 
   return (
     <div className="absolute top-6 right-6 z-10">
@@ -15,7 +15,7 @@ export default function ComparisonPanel() {
         <CardHeader>
           <CardTitle className="text-white">Comparison View</CardTitle>
           <CardDescription className="text-blue-200">
-            {selectedLocation.name}
+            Environmental Data Analysis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

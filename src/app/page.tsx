@@ -3,10 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Globe from '@/components/globe/Globe'
-import HotspotTooltip from '@/components/globe/HotspotTooltip'
 import ComparisonPanel from '@/components/panel/ComparisonPanel'
 import { useAppStore } from '@/lib/store'
-import { Hotspot } from '@/lib/data'
 import { AboutDialog } from '@/components/modal/AboutModal'
 
 // Temporary loading component
@@ -19,18 +17,7 @@ function Loading() {
 }
 
 export default function HomePage() {
-  const { selectedLocation, isPanelOpen, setSelectedLocation, togglePanel } = useAppStore()
-  
-  const handleHotspotClick = (hotspot: Hotspot) => {
-    console.log('🎯 Hotspot clicked:', hotspot.name)
-    console.log('📍 Setting selected location:', hotspot)
-    setSelectedLocation(hotspot)
-    if (!isPanelOpen) {
-      console.log('📋 Opening panel for:', hotspot.name)
-      togglePanel()
-    }
-    console.log('✅ Store state updated successfully')
-  }
+  const { isPanelOpen, togglePanel } = useAppStore()
 
   return (
     <div className="min-h-screen bg-black">
@@ -42,88 +29,20 @@ export default function HomePage() {
                      <img 
                        src="/logo/logo-text.png" 
                        alt="Bloome" 
-                       className="h-10 w-auto"
+                       className="h-10 w-auto -ml-1.5"
                      />
                    </div>
-                   <p className="text-blue-200">Earth Bloom Dashboard</p>
+                   <p className="text-blue-200">See Earth in Bloom</p>
                  </div>
-          <div className="flex gap-4">
-            <AboutDialog />
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Explore Earth
-            </Button>
-          </div>
         </div>
       </header>
 
             {/* Main Content */}
             <main className="relative h-screen">
               {/* 3D Earth Canvas */}
-              <Globe className="w-full h-full" onHotspotClick={handleHotspotClick} />
-              
-              {/* Hotspot Tooltip */}
-              <HotspotTooltip />
+              <Globe className="w-full h-full" />
 
-        {/* Welcome Card */}
-        {!isPanelOpen && (
-          <div className="absolute bottom-6 left-6 z-10">
-            <Card className="w-80 bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Welcome to Bloome</CardTitle>
-                <CardDescription className="text-blue-200">
-                  Interactive 3D Earth Observation Platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-white/80 text-sm">
-                  Explore environmental changes through satellite imagery and interactive 3D visualization.
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    Start Exploring
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/20">
-                    Learn More
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
-        {/* Hotspot Info Panel */}
-        {isPanelOpen && selectedLocation && (
-          <div className="absolute bottom-6 left-6 z-10">
-            <Card className="w-80 bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">{selectedLocation.name}</CardTitle>
-                <CardDescription className="text-blue-200">
-                  {selectedLocation.type.charAt(0).toUpperCase() + selectedLocation.type.slice(1)} • {selectedLocation.severity} severity
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-white/80 text-sm">{selectedLocation.description}</p>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => console.log('Open comparison panel for:', selectedLocation.name)}
-                  >
-                    View Comparison
-                  </Button>
-                  <Button 
-                    size="sm"
-                    variant="outline" 
-                    className="border-white/20 text-white hover:bg-white/20"
-                    onClick={() => togglePanel()}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Comparison Panel */}
         <ComparisonPanel />
