@@ -3,11 +3,12 @@
 import React, { useState } from 'react'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, Minimize2, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function TimeSlider() {
   const [currentDate, setCurrentDate] = useState(new Date('2023-06-08'))
+  const [isMinimized, setIsMinimized] = useState(false)
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate()
@@ -33,8 +34,39 @@ export default function TimeSlider() {
     setCurrentDate(newDate)
   }
 
+  if (isMinimized) {
+    return (
+      <div className="flex items-center gap-2 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg">
+        <Calendar className="h-5 w-5" />
+        <span className="font-mono text-sm">
+          {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </span>
+        <Button 
+          size="icon" 
+          variant="ghost" 
+          className="text-white/60 hover:text-white h-6 w-6" 
+          onClick={() => setIsMinimized(false)}
+        >
+          <Maximize2 className="h-3 w-3" />
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg w-[800px] max-w-[90vw]">
+      {/* Header with minimize button */}
+      <div className="flex justify-end">
+        <Button 
+          size="icon" 
+          variant="ghost" 
+          className="text-white/60 hover:text-white h-6 w-6" 
+          onClick={() => setIsMinimized(true)}
+        >
+          <Minimize2 className="h-3 w-3" />
+        </Button>
+      </div>
+
       {/* Year Navigator, Date Display, and Month Navigator */}
       <div className="grid grid-cols-3 items-center px-2">
         <div className="flex items-center justify-start gap-2">
