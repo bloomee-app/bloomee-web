@@ -62,10 +62,10 @@ export default function ComparisonPanel() {
 
   return (
     <div className={cn(
-      "fixed top-6 right-6 z-10 w-96 max-h-[80vh] overflow-y-auto transform transition-transform duration-300",
+      "fixed top-6 right-6 bottom-12 z-10 w-96 transform transition-transform duration-300",
       isPanelOpen ? "translate-x-0" : "translate-x-full"
     )}>
-      <Card className="bg-white/10 backdrop-blur-md border-white/20">
+      <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col">
         <CardHeader>
           <Button 
             size="icon" 
@@ -85,7 +85,7 @@ export default function ComparisonPanel() {
             }
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 flex-1 overflow-y-auto">
           {loading && (
             <div className="text-white/80 text-sm text-center py-4">
               Loading blooming data...
@@ -131,7 +131,7 @@ export default function ComparisonPanel() {
               {/* Event Terkini */}
               <div className="space-y-2">
                 <h4 className="text-white font-medium">Recent Events</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2">
                   {bloomingData.temporal_data.slice(-3).map((yearData) => (
                     <div key={yearData.year} className="bg-white/5 p-3 rounded text-sm">
                       <div className="text-white/90 font-medium">
