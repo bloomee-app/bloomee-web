@@ -117,7 +117,7 @@ function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => 
     }
   `
 
-  // Fragment shader - EXACT from original vertex-earth with rainbow effect
+  // Fragment shader - Modified to focus on land areas only
   const fragmentShader = `
     uniform sampler2D colorTexture;
     uniform sampler2D alphaTexture;
@@ -129,13 +129,32 @@ function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => 
 
     void main() {
       if (floor(vVisible + 0.1) == 0.0) discard;
-      float alpha = 1.0 - texture2D(alphaTexture, vUv).r;
+      
       vec3 color = texture2D(colorTexture, vUv).rgb;
       vec3 other = texture2D(otherTexture, vUv).rgb;
+      
+      // Check if this is land (not ocean)
+      float blue = color.b;
+      float green = color.g;
+      float red = color.r;
+      float brightness = dot(color, vec3(0.299, 0.587, 0.114));
+      
+      // Skip ocean areas (let solid ocean layer handle them)
+      if (blue > red && blue > green && (blue + green + red) < 1.2) {
+        discard; // Don't render ocean areas as points
+      }
+      
+      // This is land - render with transparency
+      float alpha = 1.0 - texture2D(alphaTexture, vUv).r;
+      alpha = alpha * 0.8; // Make land slightly transparent
+      
+      // Apply hover effect
       float thresh = 0.04;
       if (vDist < thresh) {
         color = mix(color, other, (thresh - vDist) * 50.0);
+        alpha = 1.0; // Make hovered area fully opaque
       }
+      
       gl_FragColor = vec4(color, alpha);
     }
   `
@@ -159,15 +178,20 @@ function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => 
     transparent: true
   }), [uniforms])
 
-  // Raycasting function for mouse interaction - EXACT from original vertex-earth
+  // Raycasting function for mouse interaction and cursor effects
   const handleRaycast = (camera: THREE.Camera) => {
     if (!raycasterRef.current || !pointerPosRef.current || !globeUVRef.current || !wireframeRef.current) return
     
     raycasterRef.current.setFromCamera(pointerPosRef.current, camera)
     const intersects = raycasterRef.current.intersectObjects([wireframeRef.current], false)
-    if (intersects.length > 0 && intersects[0].uv) {
-      globeUVRef.current.copy(intersects[0].uv)
+    
+    // Handle UV mapping for shader effects
+    if (intersects.length > 0) {
+      if (intersects[0].uv) {
+        globeUVRef.current.copy(intersects[0].uv)
+      }
     }
+    
     uniforms.mouseUV.value = globeUVRef.current
   }
 
@@ -179,7 +203,11 @@ function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => 
     handleRaycast(state.camera)
   })
 
-  // Mouse event handler - EXACT from original vertex-earth
+  // Cursor hover state
+  const isHoveringRef = useRef(false)
+  const isDraggingRef = useRef(false)
+  
+  // Mouse event handler with cursor effects
   useEffect(() => {
     const handleMouseMove = (evt: MouseEvent) => {
       if (!pointerPosRef.current) return
@@ -187,21 +215,122 @@ function EarthGlobe({ onHotspotClick }: { onHotspotClick: (hotspot: Hotspot) => 
         (evt.clientX / window.innerWidth) * 2 - 1,
         -(evt.clientY / window.innerHeight) * 2 + 1
       )
+      
+      // Simple distance-based detection for cursor changes
+      const centerX = window.innerWidth / 2
+      const centerY = window.innerHeight / 2
+      const distance = Math.sqrt(
+        Math.pow(evt.clientX - centerX, 2) + Math.pow(evt.clientY - centerY, 2)
+      )
+      
+      // Earth radius in screen coordinates (roughly) - make it larger for easier detection
+      const earthRadius = Math.min(window.innerWidth, window.innerHeight) * 0.4
+      
+      if (distance < earthRadius && !isDraggingRef.current) {
+        if (!isHoveringRef.current) {
+          isHoveringRef.current = true
+          console.log('🖱️ Cursor changed to pointer')
+          document.body.className = 'cursor-pointer'
+        }
+      } else {
+        if (isHoveringRef.current && !isDraggingRef.current) {
+          isHoveringRef.current = false
+          console.log('🖱️ Cursor changed to default')
+          document.body.className = ''
+        }
+      }
+    }
+
+    const handleMouseDown = (evt: MouseEvent) => {
+      if (isHoveringRef.current) {
+        isDraggingRef.current = true
+        console.log('🖱️ Cursor changed to grabbing')
+        document.body.className = 'cursor-grabbing'
+      }
+    }
+
+    const handleMouseUp = (evt: MouseEvent) => {
+      isDraggingRef.current = false
+      if (isHoveringRef.current) {
+        console.log('🖱️ Cursor changed to pointer')
+        document.body.className = 'cursor-pointer'
+      } else {
+        console.log('🖱️ Cursor changed to default')
+        document.body.className = ''
+      }
     }
 
     window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('mouseup', handleMouseUp)
     
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mouseup', handleMouseUp)
+      document.body.className = '' // Reset cursor on cleanup
     }
   }, [])
+
+  // Load textures at component level (not inside useMemo)
+  const oceanTexture = useTexture('/textures/00_earthmap1k.jpg')
+
+  // Ocean material for solid layer with better ocean detection
+  const oceanMat = useMemo(() => {
+    
+    // Create ocean shader material
+    const oceanVertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `
+    
+    const oceanFragmentShader = `
+      uniform sampler2D oceanTexture;
+      varying vec2 vUv;
+      
+      void main() {
+        vec3 color = texture2D(oceanTexture, vUv).rgb;
+        
+        // Ocean detection based on color (blue/dark areas)
+        float blue = color.b;
+        float green = color.g;
+        float red = color.r;
+        
+        // If it's predominantly blue/dark (ocean), make it solid
+        if (blue > red && blue > green && (blue + green + red) < 1.2) {
+          // Ocean area - solid blue
+          gl_FragColor = vec4(mix(vec3(0.0, 0.1, 0.3), vec3(0.0, 0.4, 0.8), blue), 1.0);
+        } else {
+          // Land area - discard to show points underneath
+          discard;
+        }
+      }
+    `
+    
+    const oceanUniforms = {
+      oceanTexture: { value: oceanTexture }
+    }
+    
+    return new THREE.ShaderMaterial({
+      uniforms: oceanUniforms,
+      vertexShader: oceanVertexShader,
+      fragmentShader: oceanFragmentShader,
+      transparent: true
+    })
+  }, [oceanTexture])
 
   return (
     <group ref={globeGroupRef}>
       {/* Wireframe globe */}
       <mesh ref={wireframeRef} geometry={wireframeGeo} material={wireframeMat} />
       
-      {/* Points globe with custom shaders */}
+      {/* Solid Ocean Layer */}
+      <mesh geometry={wireframeGeo} material={oceanMat} />
+      
+      {/* Points globe with custom shaders (mainly for land) */}
       <points ref={pointsRef} geometry={pointsGeo} material={pointsMat} />
     </group>
   )
@@ -226,7 +355,12 @@ export default function Globe({ className, onHotspotClick }: GlobeProps) {
   const { cameraPosition } = useAppStore()
 
   return (
-    <div className={className}>
+    <div 
+      className={className}
+      style={{
+        cursor: 'default'
+      }}
+    >
       <Suspense fallback={<GlobeLoading />}>
         <Canvas
           camera={{ 
@@ -236,7 +370,10 @@ export default function Globe({ className, onHotspotClick }: GlobeProps) {
             far: 1000
           }}
           gl={{ antialias: true }}
-          style={{ background: 'black' }}
+          style={{ 
+            background: 'black',
+            cursor: 'inherit' // Let parent handle cursor
+          }}
         >
           {/* Lighting */}
           <hemisphereLight args={[0xffffff, 0x080820, 3]} />

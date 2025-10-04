@@ -138,3 +138,21 @@
 .glow {
   animation: glow 2s ease-in-out infinite alternate;
 }
+
+/* Cursor effects for Earth interaction */
+body {
+  cursor: default !important;
+}
+
+body.cursor-pointer {
+  cursor: pointer !important;
+}
+
+body.cursor-grabbing {
+  cursor: grabbing !important;
+}
+
+/* Ensure cursor changes work on all elements */
+* {
+  cursor: inherit !important;
+}
