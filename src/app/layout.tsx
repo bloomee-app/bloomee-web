@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Bloome – Visualizing Earth’s Bloom Events',
+  title: 'Bloomee – Visualizing Earth’s Bloom Events',
   description: 'Turning satellite data into ecological insight. An interactive 3D platform for tracking and analyzing global bloom events using NASA Earth observation data.',
 }
 

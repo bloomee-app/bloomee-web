@@ -36,10 +36,16 @@ export default function HomePage() {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 p-6">
         <div className="flex items-center justify-between">
-          <div className="text-white">
-            <h1 className="text-3xl font-bold">🌱 Bloome</h1>
-            <p className="text-blue-200">Earth Bloom Dashboard</p>
-          </div>
+                 <div className="text-white">
+                   <div className="flex items-center gap-3">
+                     <img 
+                       src="/logo/logo-text.png" 
+                       alt="Bloome" 
+                       className="h-10 w-auto"
+                     />
+                   </div>
+                   <p className="text-blue-200">Earth Bloom Dashboard</p>
+                 </div>
           <div className="flex gap-4">
             <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
               About
