@@ -3,9 +3,9 @@
 import { useAppStore } from '@/lib/store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { BloomingApiResponse } from '@/types/landsat'
-import { ArrowUp, ArrowDown, Leaf, Droplets, Sun, X } from 'lucide-react'
+import { ArrowUp, ArrowDown, Leaf, Droplets, Sun, X, Minimize2, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function ComparisonPanel() {
@@ -13,6 +13,58 @@ export default function ComparisonPanel() {
   const [bloomingData, setBloomingData] = useState<BloomingApiResponse['data'] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isMinimized, setIsMinimized] = useState(false)
+  const autoMinimizeTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Fungsi untuk mengatur auto-minimize timer
+  const resetAutoMinimizeTimer = () => {
+    if (autoMinimizeTimerRef.current) {
+      clearTimeout(autoMinimizeTimerRef.current)
+    }
+    
+    if (isPanelOpen && !isMinimized) {
+      autoMinimizeTimerRef.current = setTimeout(() => {
+        setIsMinimized(true)
+      }, 5000) // Auto-minimize setelah 5 detik
+    }
+  }
+
+  // Fungsi untuk maximize panel
+  const handleMaximize = () => {
+    setIsMinimized(false)
+    resetAutoMinimizeTimer()
+  }
+
+  // Fungsi untuk minimize panel
+  const handleMinimize = () => {
+    setIsMinimized(true)
+    if (autoMinimizeTimerRef.current) {
+      clearTimeout(autoMinimizeTimerRef.current)
+    }
+  }
+
+  // Cleanup timer saat component unmount
+  useEffect(() => {
+    return () => {
+      if (autoMinimizeTimerRef.current) {
+        clearTimeout(autoMinimizeTimerRef.current)
+      }
+    }
+  }, [])
+
+  // Auto-maximize saat ada lokasi baru yang dipilih
+  useEffect(() => {
+    if (selectedLocation && isPanelOpen && isMinimized) {
+      setIsMinimized(false)
+    }
+  }, [selectedLocation, isPanelOpen])
+
+  // Reset timer saat ada interaksi atau data baru
+  useEffect(() => {
+    if (isPanelOpen && !isMinimized) {
+      resetAutoMinimizeTimer()
+    }
+  }, [isPanelOpen, isMinimized, bloomingData, selectedLocation])
 
   useEffect(() => {
     if (!selectedLocation || !isPanelOpen) {
@@ -34,12 +86,12 @@ export default function ComparisonPanel() {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const result: BloomingApiResponse = await response.json()
+        const result = await response.json()
 
         if (result.success) {
           setBloomingData(result.data)
         } else {
-          setError(result.message)
+          setError(result.message || 'Failed to load data')
         }
       } catch (err) {
         console.error('Error fetching blooming data:', err)
@@ -60,6 +112,24 @@ export default function ComparisonPanel() {
     return null
   }
 
+  // Tampilan minimized
+  if (isMinimized) {
+    return (
+      <div className="fixed top-6 right-6 z-10 transform transition-transform duration-300">
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+            onClick={handleMaximize}
+          >
+            <Maximize2 className="h-5 w-5" />
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className={cn(
       "fixed top-6 right-6 bottom-12 z-10 w-96 transform transition-transform duration-300",
@@ -67,14 +137,24 @@ export default function ComparisonPanel() {
     )}>
       <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col">
         <CardHeader>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="absolute top-3 right-3 text-white/70 hover:bg-white/10 hover:text-white"
-            onClick={() => setPanelOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="absolute top-3 right-3 flex gap-1">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+              onClick={handleMinimize}
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+              onClick={() => setPanelOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           <CardTitle className="text-white">
             {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
           </CardTitle>
@@ -85,7 +165,11 @@ export default function ComparisonPanel() {
             }
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 flex-1 overflow-y-auto">
+        <CardContent 
+          className="space-y-6 flex-1 overflow-y-auto"
+          onMouseMove={resetAutoMinimizeTimer}
+          onScroll={resetAutoMinimizeTimer}
+        >
           {loading && (
             <div className="text-white/80 text-sm text-center py-4">
               Loading blooming data...

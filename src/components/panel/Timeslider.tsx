@@ -71,51 +71,34 @@ export default function TimeSlider() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg w-[800px] max-w-[90vw]">
-      {/* Header with minimize button */}
-      <div className="flex justify-end">
-        <Button 
-          size="icon" 
-          variant="ghost" 
-          className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" 
-          onClick={() => setIsMinimized(true)}
-        >
-          <Minimize2 className="h-3 w-3" />
+    <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg w-[600px] max-w-[85vw]">
+      {/* Year Navigator */}
+      <div className="flex items-center gap-1">
+        <Button size="icon" variant="ghost" className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" onClick={() => handleYearChange(-1)}>
+          <ChevronsLeft className="h-3 w-3" />
+        </Button>
+        <span className="font-semibold text-sm w-12 text-center">{currentDate.getFullYear()}</span>
+        <Button size="icon" variant="ghost" className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" onClick={() => handleYearChange(1)}>
+          <ChevronsRight className="h-3 w-3" />
         </Button>
       </div>
 
-      {/* Year Navigator, Date Display, and Month Navigator */}
-      <div className="grid grid-cols-3 items-center px-2">
-        <div className="flex items-center justify-start gap-2">
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white !cursor-pointer" onClick={() => handleYearChange(-1)}>
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <span className="font-semibold text-xl">{currentDate.getFullYear()}</span>
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white !cursor-pointer" onClick={() => handleYearChange(1)}>
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="text-center font-mono text-xl tracking-wide">
-          {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </div>
-        
-        <div className="flex items-center justify-end gap-2">
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white !cursor-pointer" onClick={() => handleMonthChange(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="font-mono text-xl tracking-wide w-12 text-center">{currentDate.toLocaleDateString('en-US', { month: 'short' })}</span>
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white !cursor-pointer" onClick={() => handleMonthChange(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Month Navigator */}
+      <div className="flex items-center gap-1">
+        <Button size="icon" variant="ghost" className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" onClick={() => handleMonthChange(-1)}>
+          <ChevronLeft className="h-3 w-3" />
+        </Button>
+        <span className="font-mono text-sm w-10 text-center">{currentDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+        <Button size="icon" variant="ghost" className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" onClick={() => handleMonthChange(1)}>
+          <ChevronRight className="h-3 w-3" />
+        </Button>
       </div>
       
-      {/* Custom Slider  */}
-      <div className="flex flex-col items-center justify-center p-2">
-        <div className="relative w-full h-8 flex items-center px-2">
-          <div className="flex-1 h-1 bg-blue-900/50 rounded-full relative" />
-          
+      {/* Day Slider */}
+      <div className="flex-1 flex items-center gap-2">
+        <span className="text-xs text-white/60 font-mono">1</span>
+        <div className="relative flex-1 h-6 flex items-center">
+          <div className="flex-1 h-1 bg-blue-900/50 rounded-full" />
           <Slider
             value={[currentDate.getDate()]}
             max={daysInCurrentMonth}
@@ -125,8 +108,23 @@ export default function TimeSlider() {
             className="absolute inset-0 !cursor-pointer h-full"
           />
         </div>
-        
+        <span className="text-xs text-white/60 font-mono">{daysInCurrentMonth}</span>
       </div>
+
+      {/* Current Date Display */}
+      <div className="text-center font-mono text-sm tracking-wide min-w-[80px]">
+        {currentDate.getDate()}
+      </div>
+
+      {/* Minimize Button */}
+      <Button 
+        size="icon" 
+        variant="ghost" 
+        className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" 
+        onClick={() => setIsMinimized(true)}
+      >
+        <Minimize2 className="h-3 w-3" />
+      </Button>
     </div>
   )
 }
