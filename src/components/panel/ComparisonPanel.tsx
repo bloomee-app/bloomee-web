@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 import { BloomingApiResponse } from '@/types/landsat'
+import { ArrowUp, ArrowDown, Leaf, Droplets, Sun } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function ComparisonPanel() {
   const { isPanelOpen, setPanelOpen, selectedLocation } = useAppStore()
@@ -12,7 +14,6 @@ export default function ComparisonPanel() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch blooming data ketika selectedLocation berubah
   useEffect(() => {
     if (!selectedLocation || !isPanelOpen) {
       setBloomingData(null)
@@ -53,9 +54,18 @@ export default function ComparisonPanel() {
 
   if (!isPanelOpen) return null
 
+  const getTrendIcon = (trend: string) => {
+    if (trend.includes('+')) return <ArrowUp className="text-green-400 h-4 w-4" />
+    if (trend.includes('-')) return <ArrowDown className="text-red-400 h-4 w-4" />
+    return null
+  }
+
   return (
-    <div className="absolute top-6 right-6 z-10">
-      <Card className="w-96 bg-white/10 backdrop-blur-md border-white/20 max-h-[80vh] overflow-y-auto">
+    <div className={cn(
+      "fixed top-6 right-6 z-10 w-96 max-h-[80vh] overflow-y-auto transform transition-transform duration-300",
+      isPanelOpen ? "translate-x-0" : "translate-x-full"
+    )}>
+      <Card className="bg-white/10 backdrop-blur-md border-white/20">
         <CardHeader>
           <CardTitle className="text-white">
             {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
@@ -67,7 +77,7 @@ export default function ComparisonPanel() {
             }
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {loading && (
             <div className="text-white/80 text-sm text-center py-4">
               Loading blooming data...
@@ -82,43 +92,71 @@ export default function ComparisonPanel() {
 
           {bloomingData && !loading && !error && (
             <>
-              {/* Location Info */}
+              {/* Lokasi dan Biome */}
+              <div className="flex items-center gap-2 text-white/90 text-sm">
+                <Leaf className="h-4 w-4" />
+                <p><strong>Biome:</strong> {bloomingData.location.biome.replace('_', ' ')}</p>
+              </div>
+
+              {/* Ringkasan Tren */}
               <div className="space-y-2">
-                <div className="text-white/90 text-sm">
-                  <strong>Biome:</strong> {bloomingData.location.biome.replace('_', ' ')}
-                </div>
-                <div className="text-white/70 text-xs">
-                  {bloomingData.temporal_data.length} years of data • {bloomingData.metadata.data_sources.join(', ')}
+                <h4 className="text-white font-medium flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  <span>Trends</span>
+                </h4>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    {getTrendIcon(bloomingData.trends.intensity_trend)}
+                    <span>Intensity: {bloomingData.trends.intensity_trend}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    {getTrendIcon(bloomingData.trends.blooming_advance_days_per_decade.toString())}
+                    <span>Advance: {bloomingData.trends.blooming_advance_days_per_decade} days/decade</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    <Leaf className="h-4 w-4 text-white/60" />
+                    <span>Species: {bloomingData.trends.species_composition_change}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Trends */}
+              {/* Event Terkini */}
               <div className="space-y-2">
-                <h4 className="text-white font-medium">Trends</h4>
-                <div className="text-white/80 text-sm space-y-1">
-                  <div>Blooming advance: {bloomingData.trends.blooming_advance_days_per_decade} days/decade</div>
-                  <div>Intensity trend: {bloomingData.trends.intensity_trend}</div>
-                  <div>Species diversity: {bloomingData.trends.species_composition_change}</div>
-                </div>
-              </div>
-
-              {/* Recent Blooming Events */}
-              <div className="space-y-2">
-                <h4 className="text-white font-medium">Recent Blooming Events</h4>
+                <h4 className="text-white font-medium">Recent Events</h4>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {bloomingData.temporal_data.slice(-3).map((yearData) => (
                     <div key={yearData.year} className="bg-white/5 p-3 rounded text-sm">
-                      <div className="text-white/90 font-medium">{yearData.year} - {yearData.season}</div>
-                      <div className="text-white/70 text-xs">
-                        {yearData.blooming_events.length} events • {yearData.summary.total_blooming_days} days
+                      <div className="text-white/90 font-medium">
+                        <span className="text-blue-300">{yearData.summary.dominant_species}</span> in {yearData.year}
                       </div>
-                      <div className="text-blue-300 text-xs mt-1">
+                      <div className="flex justify-between text-white/70 text-xs mt-1">
+                        <span>{yearData.blooming_events.length} events</span>
+                        <span>Avg Intensity: {yearData.summary.avg_intensity.toFixed(2)}</span>
+                      </div>
+                      <p className="text-white/60 text-xs mt-1">
                         {yearData.summary.ecological_insights}
-                      </div>
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Detail Cuaca */}
+              {bloomingData.temporal_data[0] && (
+                <div className="space-y-2">
+                  <h4 className="text-white font-medium">Weather Correlation</h4>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-white/80">
+                    <div className="flex items-center gap-2">
+                      <Sun className="h-4 w-4 text-yellow-300" />
+                      <span>Temp: {bloomingData.temporal_data[0].blooming_events[0]?.weather_correlation.temperature_avg.toFixed(1)}°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Droplets className="h-4 w-4 text-blue-300" />
+                      <span>Precip: {bloomingData.temporal_data[0].blooming_events[0]?.weather_correlation.precipitation_total.toFixed(1)}mm</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Metadata */}
               <div className="text-white/60 text-xs border-t border-white/10 pt-2">
