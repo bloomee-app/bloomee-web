@@ -32,7 +32,7 @@ export default function HomePage() {
                        className="h-10 w-auto -ml-1.5"
                      />
                    </div>
-                   <p className="text-blue-200">See Earth in Bloom</p>
+                   <p className="text-blue-200">Our Planet in Bloom</p>
                  </div>
         </div>
       </header>

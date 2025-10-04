@@ -389,8 +389,8 @@ export default function Globe({ className }: GlobeProps) {
             enableZoom={true}
             enablePan={true}
             enableRotate={true}
-            minDistance={2.5}  // Batasan zoom in - tidak bisa terlalu dekat
-            maxDistance={26.0}  
+            minDistance={2.5}  
+            maxDistance={22.0}  
           />
         </Canvas>
       </Suspense>
