@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, Minimize2, Maximize2 } from 'lucide-react'
@@ -8,7 +8,24 @@ import { cn } from '@/lib/utils'
 
 export default function TimeSlider() {
   const [currentDate, setCurrentDate] = useState(new Date('2023-06-08'))
-  const [isMinimized, setIsMinimized] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false) 
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Load saved state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('timeSliderMinimized')
+    if (savedState !== null) {
+      setIsMinimized(JSON.parse(savedState))
+    }
+    setIsLoaded(true)
+  }, [])
+
+  // Save state to localStorage when it changes (only after initial load)
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('timeSliderMinimized', JSON.stringify(isMinimized))
+    }
+  }, [isMinimized, isLoaded])
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate()
@@ -44,7 +61,7 @@ export default function TimeSlider() {
         <Button 
           size="icon" 
           variant="ghost" 
-          className="text-white/60 hover:text-white h-6 w-6" 
+          className="text-white/60 hover:text-white h-6 w-6 cursor-pointer" 
           onClick={() => setIsMinimized(false)}
         >
           <Maximize2 className="h-3 w-3" />
@@ -60,7 +77,7 @@ export default function TimeSlider() {
         <Button 
           size="icon" 
           variant="ghost" 
-          className="text-white/60 hover:text-white h-6 w-6" 
+          className="text-white/60 hover:text-white h-6 w-6 cursor-pointer" 
           onClick={() => setIsMinimized(true)}
         >
           <Minimize2 className="h-3 w-3" />
@@ -70,11 +87,11 @@ export default function TimeSlider() {
       {/* Year Navigator, Date Display, and Month Navigator */}
       <div className="grid grid-cols-3 items-center px-2">
         <div className="flex items-center justify-start gap-2">
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white" onClick={() => handleYearChange(-1)}>
+          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white cursor-pointer" onClick={() => handleYearChange(-1)}>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
           <span className="font-semibold text-xl">{currentDate.getFullYear()}</span>
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white" onClick={() => handleYearChange(1)}>
+          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white cursor-pointer" onClick={() => handleYearChange(1)}>
             <ChevronsRight className="h-4 w-4" />
           </Button>
         </div>
@@ -84,11 +101,11 @@ export default function TimeSlider() {
         </div>
         
         <div className="flex items-center justify-end gap-2">
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white" onClick={() => handleMonthChange(-1)}>
+          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white cursor-pointer" onClick={() => handleMonthChange(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="font-mono text-xl tracking-wide w-12 text-center">{currentDate.toLocaleDateString('en-US', { month: 'short' })}</span>
-          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white" onClick={() => handleMonthChange(1)}>
+          <Button size="icon" variant="ghost" className="text-white/60 hover:text-white cursor-pointer" onClick={() => handleMonthChange(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
