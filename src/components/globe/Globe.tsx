@@ -67,6 +67,9 @@ function EarthGlobe() {
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster())
   const pointerPosRef = useRef<THREE.Vector2>(new THREE.Vector2())
   const globeUVRef = useRef<THREE.Vector2>(new THREE.Vector2())
+
+  // Store hook untuk update selected location
+  const { setSelectedLocation, setPanelOpen } = useAppStore()
   
   // Load textures - EXACT paths from original vertex-earth
   const colorMap = useTexture('/textures/00_earthmap1k.jpg')
@@ -180,18 +183,44 @@ function EarthGlobe() {
   // Raycasting function for mouse interaction and cursor effects
   const handleRaycast = (camera: THREE.Camera) => {
     if (!raycasterRef.current || !pointerPosRef.current || !globeUVRef.current || !wireframeRef.current) return
-    
+
     raycasterRef.current.setFromCamera(pointerPosRef.current, camera)
     const intersects = raycasterRef.current.intersectObjects([wireframeRef.current], false)
-    
+
     // Handle UV mapping for shader effects
     if (intersects.length > 0) {
       if (intersects[0].uv) {
         globeUVRef.current.copy(intersects[0].uv)
       }
     }
-    
+
     uniforms.mouseUV.value = globeUVRef.current
+  }
+
+  // Convert 3D point to geographical coordinates (lat/lng)
+  const pointToLatLng = (point: THREE.Vector3): { lat: number; lng: number } => {
+    // Normalize the vector
+    const normalized = point.clone().normalize()
+
+    // Calculate latitude (phi) and longitude (theta)
+    const lat = Math.asin(normalized.y) * (180 / Math.PI)
+    const lng = Math.atan2(normalized.x, normalized.z) * (180 / Math.PI)
+
+    return { lat, lng }
+  }
+
+  // Click handler untuk globe
+  const handleGlobeClick = (event: any) => {
+    if (!event.point) return
+
+    // Convert 3D point ke lat/lng
+    const { lat, lng } = pointToLatLng(event.point)
+
+    console.log(`🌍 Globe clicked at: ${lat.toFixed(4)}°, ${lng.toFixed(4)}°`)
+
+    // Update store dengan koordinat yang diklik
+    setSelectedLocation({ lat, lng })
+    setPanelOpen(true)
   }
 
   // Animation loop - EXACT from original vertex-earth
@@ -323,12 +352,17 @@ function EarthGlobe() {
 
   return (
     <group ref={globeGroupRef}>
-      {/* Wireframe globe */}
-      <mesh ref={wireframeRef} geometry={wireframeGeo} material={wireframeMat} />
-      
+      {/* Wireframe globe - dengan click handler */}
+      <mesh
+        ref={wireframeRef}
+        geometry={wireframeGeo}
+        material={wireframeMat}
+        onClick={handleGlobeClick}
+      />
+
       {/* Solid Ocean Layer */}
       <mesh geometry={wireframeGeo} material={oceanMat} />
-      
+
       {/* Points globe with custom shaders (mainly for land) */}
       <points ref={pointsRef} geometry={pointsGeo} material={pointsMat} />
     </group>
