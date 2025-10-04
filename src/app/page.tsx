@@ -7,6 +7,7 @@ import HotspotTooltip from '@/components/globe/HotspotTooltip'
 import ComparisonPanel from '@/components/panel/ComparisonPanel'
 import { useAppStore } from '@/lib/store'
 import { Hotspot } from '@/lib/data'
+import { AboutDialog } from '@/components/modal/AboutModal'
 
 // Temporary loading component
 function Loading() {
@@ -41,9 +42,7 @@ export default function HomePage() {
             <p className="text-blue-200">Earth Bloom Dashboard</p>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              About
-            </Button>
+            <AboutDialog />
             <Button className="bg-blue-600 hover:bg-blue-700">
               Explore Earth
             </Button>

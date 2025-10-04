@@ -6,6 +6,7 @@ import { OrbitControls, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { Hotspot } from '@/lib/data'
 import { useAppStore } from '@/lib/store'
+import Hotspots from '@/components/globe/Hotspots'
 
 // Starfield component
 function Starfield() {
@@ -246,6 +247,9 @@ export default function Globe({ className, onHotspotClick }: GlobeProps) {
           
           {/* Earth Globe */}
           <EarthGlobe onHotspotClick={onHotspotClick} />
+
+          {/* Hotspot */}
+          <Hotspots onHotspotClick={onHotspotClick} />
           
           {/* Orbit Controls */}
           <OrbitControls 
