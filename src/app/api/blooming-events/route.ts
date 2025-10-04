@@ -7,6 +7,9 @@ import {
   BloomingEvent
 } from '@/types/landsat'
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic'
+
 // Mock data generator untuk testing
 function generateMockBloomingData(lat: number, lng: number): BloomingApiResponse['data'] {
   // Determine biome based on coordinates (simplified)
