@@ -8,6 +8,7 @@ import ComparisonPanel from '@/components/panel/ComparisonPanel'
 import { useAppStore } from '@/lib/store'
 import { Hotspot } from '@/lib/data'
 import { AboutDialog } from '@/components/modal/AboutModal'
+import TimeSlider from '@/components/panel/Timeslider'
 
 // Temporary loading component
 function Loading() {
@@ -128,6 +129,11 @@ export default function HomePage() {
         {/* Comparison Panel */}
         <ComparisonPanel />
       </main>
+
+      {/* Time Slider */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+        <TimeSlider />
+      </div>
 
       {/* Footer */}
       <footer className="absolute bottom-0 right-6 z-10 p-4">
