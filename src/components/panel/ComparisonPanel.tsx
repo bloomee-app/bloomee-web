@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 import { BloomingApiResponse } from '@/types/landsat'
-import { ArrowUp, ArrowDown, Leaf, Droplets, Sun } from 'lucide-react'
+import { ArrowUp, ArrowDown, Leaf, Droplets, Sun, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function ComparisonPanel() {
@@ -67,6 +67,14 @@ export default function ComparisonPanel() {
     )}>
       <Card className="bg-white/10 backdrop-blur-md border-white/20">
         <CardHeader>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="absolute top-3 right-3 text-white/70 hover:bg-white/10 hover:text-white"
+            onClick={() => setPanelOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
           <CardTitle className="text-white">
             {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
           </CardTitle>
@@ -178,14 +186,6 @@ export default function ComparisonPanel() {
               disabled={!bloomingData}
             >
               View Details
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/20"
-              onClick={() => setPanelOpen(false)}
-            >
-              Close
             </Button>
           </div>
         </CardContent>
