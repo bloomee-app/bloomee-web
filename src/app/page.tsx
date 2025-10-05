@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Globe from '@/components/globe/Globe'
 import ComparisonPanel from '@/components/panel/ComparisonPanel'
+import ChatWidget from '@/components/chat/ChatWidget'
 import { useAppStore } from '@/lib/store'
 import { AboutDialog } from '@/components/modal/AboutModal'
 import TimeSlider from '@/components/panel/Timeslider'
@@ -45,6 +46,9 @@ export default function HomePage() {
 
         {/* Comparison Panel */}
         <ComparisonPanel />
+
+        {/* Chat Widget */}
+        <ChatWidget />
       </main>
 
       {/* Time Slider */}

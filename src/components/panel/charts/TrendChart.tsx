@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { 
   LineChart, 
   Line, 
@@ -17,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Calendar, TrendingUp, BarChart3, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/lib/store'
 
 // Mock data generator for multi-year trends
 const generateTrendData = () => {
@@ -55,9 +55,16 @@ interface TrendChartProps {
 }
 
 export default function TrendChart({ className }: TrendChartProps) {
-  const [chartMode, setChartMode] = useState<ChartMode>('intensity')
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly')
-  const [selectedSeason, setSelectedSeason] = useState<string>('all')
+  // CRITICAL: Use global store for chart settings to persist across location changes
+  // DO NOT CHANGE: This ensures chart filters stay the same when user clicks different locations
+  const { 
+    trendMode, 
+    setTrendMode, 
+    viewMode, 
+    setViewMode, 
+    selectedSeason, 
+    setSelectedSeason 
+  } = useAppStore()
   
   const rawData = generateTrendData()
   
@@ -125,7 +132,7 @@ export default function TrendChart({ className }: TrendChartProps) {
   })()
   
   const getChartData = () => {
-    switch (chartMode) {
+    switch (trendMode) {
       case 'intensity':
         return processedData.map(item => ({
           ...item,
@@ -184,8 +191,8 @@ export default function TrendChart({ className }: TrendChartProps) {
         <div className="flex gap-1 bg-white/10 rounded-lg p-1">
           <Button
             size="sm"
-            variant={chartMode === 'intensity' ? 'default' : 'ghost'}
-            onClick={() => setChartMode('intensity')}
+            variant={trendMode === 'intensity' ? 'default' : 'ghost'}
+            onClick={() => setTrendMode('intensity')}
             className="text-xs"
           >
             <TrendingUp className="h-3 w-3 mr-1" />
@@ -193,8 +200,8 @@ export default function TrendChart({ className }: TrendChartProps) {
           </Button>
           <Button
             size="sm"
-            variant={chartMode === 'species' ? 'default' : 'ghost'}
-            onClick={() => setChartMode('species')}
+            variant={trendMode === 'species' ? 'default' : 'ghost'}
+            onClick={() => setTrendMode('species')}
             className="text-xs"
           >
             <BarChart3 className="h-3 w-3 mr-1" />
@@ -202,8 +209,8 @@ export default function TrendChart({ className }: TrendChartProps) {
           </Button>
           <Button
             size="sm"
-            variant={chartMode === 'climate' ? 'default' : 'ghost'}
-            onClick={() => setChartMode('climate')}
+            variant={trendMode === 'climate' ? 'default' : 'ghost'}
+            onClick={() => setTrendMode('climate')}
             className="text-xs"
           >
             <Calendar className="h-3 w-3 mr-1" />
@@ -251,7 +258,7 @@ export default function TrendChart({ className }: TrendChartProps) {
               <Filter className="h-3 w-3 mr-1" />
               All
             </Button>
-            {['spring', 'summer', 'fall', 'winter'].map(season => (
+            {(['spring', 'summer', 'fall', 'winter'] as const).map(season => (
               <Button
                 key={season}
                 size="sm"
@@ -269,7 +276,7 @@ export default function TrendChart({ className }: TrendChartProps) {
       {/* Chart */}
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          {chartMode === 'climate' ? (
+          {trendMode === 'climate' ? (
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis 
@@ -324,7 +331,7 @@ export default function TrendChart({ className }: TrendChartProps) {
                 stroke={chartData[0]?.color || '#3b82f6'}
                 strokeWidth={2}
                 dot={{ fill: chartData[0]?.color || '#3b82f6', strokeWidth: 2, r: 4 }}
-                name={chartMode === 'intensity' ? 'Blooming Intensity' : 'Species Count'}
+                name={trendMode === 'intensity' ? 'Blooming Intensity' : 'Species Count'}
               />
             </LineChart>
           )}
@@ -336,7 +343,7 @@ export default function TrendChart({ className }: TrendChartProps) {
         <h5 className="text-white font-medium mb-2">Trend Summary</h5>
         <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
           <div>
-            <span className="font-medium">Current View:</span> {viewMode} {chartMode}
+            <span className="font-medium">Current View:</span> {viewMode} {trendMode}
           </div>
           <div>
             <span className="font-medium">Data Points:</span> {chartData.length}

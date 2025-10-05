@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { BloomingApiResponse } from '@/types/landsat'
 
 // Chat message type for chat interface
 interface ChatMessage {
@@ -14,8 +15,9 @@ interface DateRange {
   end: Date
 }
 
-type Season = 'spring' | 'summer' | 'fall' | 'winter'
-type TrendMode = 'intensity' | 'species' | 'advance'
+type Season = 'spring' | 'summer' | 'fall' | 'winter' | 'all'
+type TrendMode = 'intensity' | 'species' | 'climate'
+type ViewMode = 'monthly' | 'yearly' | 'seasonal'
 
 // Insights and trend data types
 interface TrendDataPoint {
@@ -55,6 +57,9 @@ interface AppState {
   // Selected location for Landsat data
   selectedLocation: { lat: number; lng: number } | null
 
+  // Blooming data from API
+  bloomingData: BloomingApiResponse['data'] | null
+
   // Scale management state
   scaleMode: 'global' | 'regional' | 'local'
 
@@ -66,6 +71,7 @@ interface AppState {
   selectedTimeRange: DateRange
   selectedSeason: Season | null
   trendMode: TrendMode
+  viewMode: ViewMode
 
   // Insights and trend data state
   trendData: TrendDataPoint[]
@@ -79,12 +85,14 @@ interface AppState {
   setActiveTab: (tab: string) => void
   setCameraPosition: (position: [number, number, number]) => void
   setSelectedLocation: (location: { lat: number; lng: number } | null) => void
+  setBloomingData: (data: BloomingApiResponse['data'] | null) => void
   setScaleMode: (mode: 'global' | 'regional' | 'local') => void
   setChatOpen: (open: boolean) => void
   addChatMessage: (message: ChatMessage) => void
   setSelectedTimeRange: (range: DateRange) => void
   setSelectedSeason: (season: Season | null) => void
   setTrendMode: (mode: TrendMode) => void
+  setViewMode: (mode: ViewMode) => void
   setTrendData: (data: TrendDataPoint[]) => void
   setEcologicalInsights: (insights: EcologicalInsight[]) => void
   setConservationInsights: (insights: ConservationInsight[]) => void
@@ -97,12 +105,14 @@ export const useAppStore = create<AppState>((set) => ({
   activeTab: 'overview',
   cameraPosition: [0, 0, 3.5],
   selectedLocation: null,
+  bloomingData: null,
   scaleMode: 'global',
   isChatOpen: false,
   chatMessages: [],
   selectedTimeRange: { start: new Date('2023-01-01'), end: new Date('2024-12-31') },
-  selectedSeason: null,
+  selectedSeason: 'all',
   trendMode: 'intensity',
+  viewMode: 'monthly',
   trendData: [],
   ecologicalInsights: [],
   conservationInsights: [],
@@ -126,6 +136,9 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedLocation: (location) =>
     set({ selectedLocation: location }),
 
+  setBloomingData: (data) =>
+    set({ bloomingData: data }),
+
   setScaleMode: (mode) =>
     set({ scaleMode: mode }),
 
@@ -143,6 +156,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   setTrendMode: (mode) =>
     set({ trendMode: mode }),
+
+  setViewMode: (mode) =>
+    set({ viewMode: mode }),
 
   setTrendData: (data) =>
     set({ trendData: data }),

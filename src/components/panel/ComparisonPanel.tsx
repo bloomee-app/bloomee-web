@@ -12,7 +12,7 @@ import TabContent from './tabs/TabContent'
 export default function ComparisonPanel() {
   // CRITICAL: These store values are essential for auto-open behavior
   // DO NOT REMOVE: selectedLocation triggers panel auto-open when globe is clicked
-  const { isPanelOpen, setPanelOpen, selectedLocation, isMinimized, setIsMinimized } = useAppStore()
+  const { isPanelOpen, setPanelOpen, selectedLocation, isMinimized, setIsMinimized, setBloomingData: setGlobalBloomingData } = useAppStore()
   const [bloomingData, setBloomingData] = useState<BloomingApiResponse['data'] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +57,8 @@ export default function ComparisonPanel() {
         const result = await response.json()
 
         if (result.success) {
-          setBloomingData(result.data)
+          setBloomingData(result.data) // Local state
+          setGlobalBloomingData(result.data) // Global store for chat access
         } else {
           setError(result.message || 'Failed to load data')
         }

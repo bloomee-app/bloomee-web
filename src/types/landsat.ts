@@ -58,12 +58,41 @@ export interface BloomingTrends {
   species_composition_change: string
 }
 
+// Ecological Data Types
+export interface EcologicalData {
+  biome: {
+    type: string
+    description: string
+    threats: string[]
+    conservationStatus: 'stable' | 'threatened' | 'critical'
+  }
+  biodiversity: {
+    speciesCount: number
+    endemicSpecies: number
+    diversityIndex: number
+    trend: 'increasing' | 'stable' | 'decreasing'
+  }
+  climateChange: {
+    temperatureChange: number
+    precipitationChange: number
+    impactLevel: 'low' | 'medium' | 'high'
+    adaptationMeasures: string[]
+  }
+  conservation: {
+    priority: 'low' | 'medium' | 'high' | 'critical'
+    protectedArea: boolean
+    threats: string[]
+    recommendations: string[]
+  }
+}
+
 export interface BloomingApiResponse {
   success: boolean
   data: {
     location: LocationInfo
     temporal_data: YearlyBloomingData[]
     trends: BloomingTrends
+    ecological_data: EcologicalData
     metadata: {
       data_sources: string[]
       processing_model: string

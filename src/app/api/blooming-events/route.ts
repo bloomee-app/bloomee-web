@@ -88,6 +88,9 @@ function generateMockBloomingData(lat: number, lng: number): BloomingApiResponse
     temporal_data.push(yearData)
   }
 
+  // Generate ecological data based on biome and coordinates
+  const ecologicalData = generateEcologicalData(lat, lng, biome)
+
   return {
     location: {
       lat,
@@ -101,11 +104,171 @@ function generateMockBloomingData(lat: number, lng: number): BloomingApiResponse
       intensity_trend: '+0.03/year',
       species_composition_change: 'Stable with slight increase in diversity'
     },
+    ecological_data: ecologicalData,
     metadata: {
       data_sources: ['Landsat 8', 'Landsat 9', 'Mock Data'],
       processing_model: 'Mock ML Model v1.0',
       last_updated: new Date().toISOString(),
       data_quality: 'medium'
+    }
+  }
+}
+
+// Generate ecological data based on location and biome
+function generateEcologicalData(lat: number, lng: number, biome: string) {
+  // Base ecological data by biome
+  const biomeData = {
+    temperate_forest: {
+      biome: {
+        type: 'Temperate Deciduous Forest',
+        description: 'Mixed deciduous forest with seasonal leaf drop and diverse understory vegetation.',
+        threats: ['Deforestation', 'Climate Change', 'Invasive Species'],
+        conservationStatus: 'threatened' as const
+      },
+      biodiversity: {
+        speciesCount: Math.floor(Math.random() * 200) + 300,
+        endemicSpecies: Math.floor(Math.random() * 20) + 15,
+        diversityIndex: Math.random() * 0.5 + 2.5,
+        trend: 'stable' as const
+      },
+      climateChange: {
+        temperatureChange: Math.random() * 2 - 1,
+        precipitationChange: Math.random() * 20 - 10,
+        impactLevel: 'medium' as const,
+        adaptationMeasures: [
+          'Assisted migration of tree species',
+          'Enhanced forest connectivity',
+          'Climate-resilient reforestation'
+        ]
+      },
+      conservation: {
+        priority: 'high' as const,
+        protectedArea: Math.random() > 0.3,
+        threats: ['Urban Development', 'Agriculture Expansion', 'Climate Change'],
+        recommendations: [
+          'Establish wildlife corridors',
+          'Implement sustainable logging practices',
+          'Monitor invasive species populations'
+        ]
+      }
+    },
+    tropical_forest: {
+      biome: {
+        type: 'Tropical Rainforest',
+        description: 'High biodiversity rainforest with year-round growing season and complex canopy structure.',
+        threats: ['Deforestation', 'Mining', 'Agriculture', 'Climate Change'],
+        conservationStatus: 'critical' as const
+      },
+      biodiversity: {
+        speciesCount: Math.floor(Math.random() * 500) + 800,
+        endemicSpecies: Math.floor(Math.random() * 100) + 50,
+        diversityIndex: Math.random() * 0.8 + 3.0,
+        trend: 'decreasing' as const
+      },
+      climateChange: {
+        temperatureChange: Math.random() * 3 - 0.5,
+        precipitationChange: Math.random() * 30 - 15,
+        impactLevel: 'high' as const,
+        adaptationMeasures: [
+          'Protect intact forest corridors',
+          'Restore degraded areas',
+          'Implement REDD+ programs'
+        ]
+      },
+      conservation: {
+        priority: 'critical' as const,
+        protectedArea: Math.random() > 0.5,
+        threats: ['Deforestation', 'Mining', 'Agriculture', 'Climate Change'],
+        recommendations: [
+          'Strengthen protected area networks',
+          'Promote sustainable agriculture',
+          'Support indigenous land rights'
+        ]
+      }
+    },
+    tundra: {
+      biome: {
+        type: 'Arctic Tundra',
+        description: 'Cold, treeless biome with permafrost and short growing seasons supporting hardy vegetation.',
+        threats: ['Climate Change', 'Oil/Gas Development', 'Permafrost Thaw'],
+        conservationStatus: 'threatened' as const
+      },
+      biodiversity: {
+        speciesCount: Math.floor(Math.random() * 50) + 30,
+        endemicSpecies: Math.floor(Math.random() * 10) + 5,
+        diversityIndex: Math.random() * 0.3 + 1.0,
+        trend: 'decreasing' as const
+      },
+      climateChange: {
+        temperatureChange: Math.random() * 4 + 1,
+        precipitationChange: Math.random() * 40 - 20,
+        impactLevel: 'high' as const,
+        adaptationMeasures: [
+          'Monitor permafrost conditions',
+          'Protect migratory routes',
+          'Manage development impacts'
+        ]
+      },
+      conservation: {
+        priority: 'high' as const,
+        protectedArea: Math.random() > 0.2,
+        threats: ['Climate Change', 'Oil/Gas Development', 'Permafrost Thaw'],
+        recommendations: [
+          'Establish climate monitoring networks',
+          'Limit industrial development',
+          'Protect critical habitats'
+        ]
+      }
+    },
+    grassland: {
+      biome: {
+        type: 'Temperate Grassland',
+        description: 'Open grassland ecosystems with seasonal precipitation supporting diverse grass species.',
+        threats: ['Agriculture', 'Overgrazing', 'Urban Development', 'Climate Change'],
+        conservationStatus: 'threatened' as const
+      },
+      biodiversity: {
+        speciesCount: Math.floor(Math.random() * 150) + 200,
+        endemicSpecies: Math.floor(Math.random() * 30) + 10,
+        diversityIndex: Math.random() * 0.6 + 2.0,
+        trend: 'stable' as const
+      },
+      climateChange: {
+        temperatureChange: Math.random() * 2.5 - 0.5,
+        precipitationChange: Math.random() * 25 - 12,
+        impactLevel: 'medium' as const,
+        adaptationMeasures: [
+          'Sustainable grazing practices',
+          'Restore native grasslands',
+          'Implement fire management'
+        ]
+      },
+      conservation: {
+        priority: 'medium' as const,
+        protectedArea: Math.random() > 0.4,
+        threats: ['Agriculture', 'Overgrazing', 'Urban Development'],
+        recommendations: [
+          'Promote rotational grazing',
+          'Restore native species',
+          'Establish grassland reserves'
+        ]
+      }
+    }
+  }
+
+  // Get base data for the biome
+  const baseData = biomeData[biome as keyof typeof biomeData] || biomeData.grassland
+
+  // Add some location-based variation
+  const latVariation = Math.abs(lat) / 90
+  const lngVariation = Math.abs(lng) / 180
+
+  return {
+    ...baseData,
+    biodiversity: {
+      ...baseData.biodiversity,
+      speciesCount: Math.floor(baseData.biodiversity.speciesCount * (0.8 + latVariation * 0.4)),
+      endemicSpecies: Math.floor(baseData.biodiversity.endemicSpecies * (0.9 + lngVariation * 0.2))
     }
   }
 }
