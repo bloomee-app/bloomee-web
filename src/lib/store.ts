@@ -136,7 +136,13 @@ const getStoredChatState = () => {
 const setStoredChatState = (state: { isChatOpen: boolean; isChatWidgetExtended: boolean; chatWidgetPosition: { x: number; y: number } }) => {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem('bloome-chat-state', JSON.stringify(state))
+    // Only store position and open state, never store extended state
+    const stateToStore = {
+      isChatOpen: state.isChatOpen,
+      isChatWidgetExtended: false, // Always store as false
+      chatWidgetPosition: state.chatWidgetPosition
+    }
+    localStorage.setItem('bloome-chat-state', JSON.stringify(stateToStore))
   } catch {
     // Ignore localStorage errors
   }
@@ -157,8 +163,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedLocation: null,
   bloomingData: null,
   scaleMode: 'global',
-  isChatOpen: false,
-  isChatWidgetExtended: false,
+  isChatOpen: true, // Always start with chat open (button visible)
+  isChatWidgetExtended: false, // But always start minimized
   chatMessages: [],
   chatWidgetSize: { width: 400, height: 350 },
   chatWidgetPosition: { x: 16, y: 0 },
@@ -210,22 +216,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   setChatOpen: (open) =>
     set((state) => {
       const newState = { ...state, isChatOpen: open }
-      // Persist chat state
-      setStoredChatState({
-        isChatOpen: newState.isChatOpen,
-        isChatWidgetExtended: newState.isChatWidgetExtended,
-        chatWidgetPosition: newState.chatWidgetPosition
-      })
+      // Only persist if chat is being closed (to remember position)
+      if (!open) {
+        setStoredChatState({
+          isChatOpen: newState.isChatOpen,
+          isChatWidgetExtended: false, // Always store as false
+          chatWidgetPosition: newState.chatWidgetPosition
+        })
+      }
       return newState
     }),
 
   setChatWidgetExtended: (extended) =>
     set((state) => {
       const newState = { ...state, isChatWidgetExtended: extended }
-      // Persist chat state
+      // Only persist position, never extended state
       setStoredChatState({
         isChatOpen: newState.isChatOpen,
-        isChatWidgetExtended: newState.isChatWidgetExtended,
+        isChatWidgetExtended: false, // Always store as false
         chatWidgetPosition: newState.chatWidgetPosition
       })
       return newState
@@ -237,10 +245,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setChatWidgetPosition: (position) =>
     set((state) => {
       const newState = { ...state, chatWidgetPosition: position }
-      // Persist chat state
+      // Persist position only
       setStoredChatState({
         isChatOpen: newState.isChatOpen,
-        isChatWidgetExtended: newState.isChatWidgetExtended,
+        isChatWidgetExtended: false, // Always store as false
         chatWidgetPosition: newState.chatWidgetPosition
       })
       return newState
@@ -280,9 +288,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     const storedState = getStoredChatState()
     if (storedState) {
       set({
-        isChatOpen: storedState.isChatOpen,
-        isChatWidgetExtended: storedState.isChatWidgetExtended,
-        chatWidgetPosition: storedState.chatWidgetPosition
+        // Always start minimized, but keep chat "open" so button is visible
+        isChatOpen: true,
+        isChatWidgetExtended: false, // Always start minimized - override any stored extended state
+        chatWidgetPosition: storedState.chatWidgetPosition || { x: 16, y: 0 }
+      })
+    } else {
+      // First time - initialize with button visible
+      set({
+        isChatOpen: true,
+        isChatWidgetExtended: false
       })
     }
   },

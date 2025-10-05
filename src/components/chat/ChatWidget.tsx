@@ -7,7 +7,6 @@ import {
   MessageCircle, 
   Send, 
   Minimize2, 
-  Maximize2, 
   Bot, 
   User,
   Loader2,
@@ -16,7 +15,17 @@ import {
 import { FaClockRotateLeft } from "react-icons/fa6"
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
-import anime from 'animejs'
+
+// Helper function to get stored chat state
+const getStoredChatState = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem('bloome-chat-state')
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 interface ChatMessage {
   id: string
@@ -38,8 +47,6 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<HTMLDivElement>(null)
-  const minimizedRef = useRef<HTMLDivElement>(null)
-  const [isAnimating, setIsAnimating] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   
   // CRITICAL: Use global store for chat state
@@ -59,10 +66,58 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     restoreChatState
   } = useAppStore()
 
-  // Restore chat state from localStorage after hydration
+  // Initialize chat state - always start minimized
   useEffect(() => {
-    restoreChatState()
-  }, [restoreChatState])
+    // Always start with minimized state first
+    setChatOpen(true) // Button needs to be visible
+    setChatWidgetExtended(false) // But panel starts minimized
+    
+    // Only restore position from localStorage, ignore extended state
+    const storedState = getStoredChatState()
+    if (storedState && storedState.chatWidgetPosition) {
+      setChatWidgetPosition(storedState.chatWidgetPosition)
+    }
+    
+    // Force minimized state multiple times to ensure it's applied
+    const timeoutId1 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 10)
+    
+    const timeoutId2 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 100)
+    
+    const timeoutId3 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 500)
+    
+    const timeoutId4 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 1000)
+    
+    const timeoutId5 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 2000)
+    
+    const timeoutId6 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 3000)
+    
+    const timeoutId7 = setTimeout(() => {
+      setChatWidgetExtended(false)
+    }, 4000)
+    
+    return () => {
+      clearTimeout(timeoutId1)
+      clearTimeout(timeoutId2)
+      clearTimeout(timeoutId3)
+      clearTimeout(timeoutId4)
+      clearTimeout(timeoutId5)
+      clearTimeout(timeoutId6)
+      clearTimeout(timeoutId7)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run once on mount
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -81,13 +136,17 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
   }, [isChatOpen, messages.length])
 
-  // Set proper position if restored from localStorage and position is still default
+  // Set proper position when expanding
   useEffect(() => {
-    if (isChatWidgetExtended && chatWidgetPosition.y === 0) {
-      const properY = window.innerHeight - chatWidgetSize.height - 16
-      setChatWidgetPosition({ x: 16, y: properY })
+    if (isChatWidgetExtended && isChatOpen) {
+      // Calculate proper bottom-left position if at default (0,0)
+      if (chatWidgetPosition.x === 0 && chatWidgetPosition.y === 0) {
+        const properX = 16
+        const properY = Math.max(0, window.innerHeight - chatWidgetSize.height - 16)
+        setChatWidgetPosition({ x: properX, y: properY })
+      }
     }
-  }, [isChatWidgetExtended, chatWidgetPosition, chatWidgetSize, setChatWidgetPosition])
+  }, [isChatWidgetExtended, isChatOpen, chatWidgetPosition.x, chatWidgetPosition.y, chatWidgetSize.height, setChatWidgetPosition])
 
 
   const handleSendMessage = async () => {
@@ -120,140 +179,15 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }, 1000 + Math.random() * 2000) // 1-3 second delay
   }
 
-  // UTIL: Create a temporary overlay element for morph animation
-  const createOverlay = (rect: { left: number; top: number; width: number; height: number }, borderRadiusPx: number) => {
-    const overlay = document.createElement('div')
-    overlay.style.position = 'fixed'
-    overlay.style.left = `${rect.left}px`
-    overlay.style.top = `${rect.top}px`
-    overlay.style.width = `${rect.width}px`
-    overlay.style.height = `${rect.height}px`
-    overlay.style.zIndex = '10000'
-    overlay.style.background = 'rgba(255,255,255,0.05)'
-    overlay.style.border = '1px solid rgba(255,255,255,0.1)'
-    overlay.style.borderRadius = `${borderRadiusPx}px`
-    overlay.style.boxShadow = '0 10px 30px rgba(0,0,0,0.35)'
-    // mimic blur feel subtly
-    overlay.style.backdropFilter = 'blur(6px)'
-    overlay.style.setProperty('-webkit-backdrop-filter', 'blur(6px)')
-    document.body.appendChild(overlay)
-    return overlay
-  }
+  const handleExpand = useCallback(() => {
+    setChatOpen(true)
+    setChatWidgetExtended(true)
+  }, [setChatOpen, setChatWidgetExtended])
 
-  // OPEN: Animate from minimized icon to full panel
-  const openWithAnimation = useCallback(() => {
-    if (isAnimating) return
-    const iconEl = minimizedRef.current
-    if (!iconEl) {
-      setChatOpen(true)
-      setChatWidgetExtended(true)
-      return
-    }
-
-    const iconRect = iconEl.getBoundingClientRect()
-    
-    // Calculate proper target position (bottom-left by default)
-    let targetX = chatWidgetPosition.x
-    let targetY = chatWidgetPosition.y
-    
-    // If position is still default (y: 0), calculate proper bottom-left position
-    if (targetY === 0) {
-      targetX = 16 // 16px from left
-      targetY = window.innerHeight - chatWidgetSize.height - 16 // 16px from bottom
-    }
-    
-    const targetRect = {
-      left: targetX,
-      top: targetY,
-      width: chatWidgetSize.width,
-      height: chatWidgetSize.height
-    }
-
-    const overlay = createOverlay(
-      { left: iconRect.left, top: iconRect.top, width: iconRect.width, height: iconRect.height },
-      24
-    )
-
-    setIsAnimating(true)
-    // Hide the real icon during animation to avoid double visuals
-    const prevVisibility = iconEl.style.visibility
-    iconEl.style.visibility = 'hidden'
-
-    anime({
-      targets: overlay,
-      left: targetRect.left,
-      top: targetRect.top,
-      width: targetRect.width,
-      height: targetRect.height,
-      borderRadius: [
-        '32px 32px 32px 4px', // From: icon style (rounded top, sharp bottom-left)
-        '12px 12px 12px 12px'  // To: panel style (all rounded)
-      ],
-      easing: 'easeInOutQuad',
-      duration: 450,
-      complete: () => {
-        // Update store with calculated position
-        setChatWidgetPosition({ x: targetX, y: targetY })
-        setChatOpen(true)
-        setChatWidgetExtended(true)
-        setIsAnimating(false)
-        // cleanup
-        overlay.remove()
-        iconEl.style.visibility = prevVisibility
-      }
-    })
-  }, [isAnimating, chatWidgetPosition, chatWidgetSize, setChatOpen, setChatWidgetExtended, setChatWidgetPosition])
-
-  // CLOSE: Animate from full panel to minimized icon
-  const closeWithAnimation = useCallback(() => {
-    if (isAnimating) return
-    const panelEl = widgetRef.current
-    // Compute target icon rect (bottom-left button, 16px insets, 48px size)
-    const target = {
-      width: 48,
-      height: 48,
-      left: 16,
-      top: Math.max(0, window.innerHeight - 16 - 48)
-    }
-
-    if (!panelEl) {
-      setChatOpen(false)
-      setChatWidgetExtended(false)
-      return
-    }
-
-    const panelRect = panelEl.getBoundingClientRect()
-    const overlay = createOverlay(
-      { left: panelRect.left, top: panelRect.top, width: panelRect.width, height: panelRect.height },
-      12 // Panel starts with 12px border radius
-    )
-
-    setIsAnimating(true)
-    // Hide real panel during animation
-    const prevVisibility = panelEl.style.visibility
-    panelEl.style.visibility = 'hidden'
-
-    anime({
-      targets: overlay,
-      left: target.left,
-      top: target.top,
-      width: target.width,
-      height: target.height,
-      borderRadius: [
-        '12px 12px 12px 12px',  // From: panel style (all rounded)
-        '32px 32px 32px 4px'    // To: icon style (rounded top, sharp bottom-left)
-      ],
-      easing: 'easeInOutQuad',
-      duration: 450,
-      complete: () => {
-        setChatOpen(false)
-        setChatWidgetExtended(false)
-        setIsAnimating(false)
-        overlay.remove()
-        panelEl.style.visibility = prevVisibility
-      }
-    })
-  }, [isAnimating, setChatOpen, setChatWidgetExtended])
+  const handleMinimize = useCallback(() => {
+    setChatOpen(true) // Ensure button is visible
+    setChatWidgetExtended(false) // Minimize the panel
+  }, [setChatOpen, setChatWidgetExtended])
 
   const generateMockResponse = async (userInput: string): Promise<string> => {
     // Get current context
@@ -292,14 +226,6 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
-    }
-  }
-
-  const toggleChat = () => {
-    if (isChatOpen) {
-      closeWithAnimation()
-    } else {
-      openWithAnimation()
     }
   }
 
@@ -372,66 +298,90 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
   }, [isResizing, isDragging, handleMouseMove, handleDragMove, handleMouseUp])
 
-  // Don't render if chat is closed
-  if (!isChatOpen) {
-    return (
-      <div ref={minimizedRef} className={cn("fixed bottom-4 left-4", className)}>
-              <Button
-                onClick={openWithAnimation}
-                size="lg"
-                className="h-12 w-12 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-lg !cursor-pointer"
-                style={{
-                  borderRadius: '32px 32px 32px 4px'
-                }}
-              >
-          <MessageCircle className="h-6 w-6 text-white" />
-        </Button>
-      </div>
-    )
-  }
+  // Calculate positions for animation
+  const minimizedPos = { x: 16, y: window.innerHeight - 64 }
+  const expandedPos = chatWidgetPosition.x === 0 && chatWidgetPosition.y === 0
+    ? { x: 16, y: window.innerHeight - chatWidgetSize.height - 16 }
+    : chatWidgetPosition
 
   return (
     <div 
       ref={widgetRef}
-      className={cn("transform transition-transform duration-300", className)}
+      className={cn(
+        "fixed z-50 origin-bottom-left",
+        (isDragging || isResizing) ? "transition-none" : "transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+        className
+      )}
       style={{ 
-        width: `${chatWidgetSize.width}px`, 
-        height: `${chatWidgetSize.height}px`,
-        maxWidth: 'calc(50vw - 2rem)',
-        maxHeight: 'calc(100vh - 12rem)',
-        position: 'relative'
+        width: isChatWidgetExtended ? `${chatWidgetSize.width}px` : '48px',
+        height: isChatWidgetExtended ? `${chatWidgetSize.height}px` : '48px',
+        left: isChatWidgetExtended ? `${expandedPos.x}px` : `${minimizedPos.x}px`,
+        top: isChatWidgetExtended ? `${expandedPos.y}px` : `${minimizedPos.y}px`,
+        transformOrigin: 'bottom left',
+        pointerEvents: 'auto', // Always allow clicks
       }}
     >
-      <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col relative">
-        {/* Header - Draggable */}
-        <div 
-          className="flex items-center justify-between p-4 border-b border-white/10 cursor-grab active:cursor-grabbing"
-          onMouseDown={handleDragStart}
+        <Card 
+          className="h-full bg-white/5 backdrop-blur-md border-white/10 flex flex-col relative shadow-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          style={{
+            borderRadius: isChatWidgetExtended ? '12px' : '32px 32px 32px 4px',
+          }}
         >
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-blue-400" />
-            <h3 className="font-semibold text-white">AI Assistant</h3>
-          </div>
-          <div className="flex items-center gap-2">
+          {/* Minimized State - Button */}
+          <div 
+            className={cn(
+              "absolute inset-0 flex items-center justify-center transition-opacity duration-300 z-10",
+              !isChatWidgetExtended ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            )}
+          >
             <Button
-              onClick={() => setShowHistory(!showHistory)}
-              size="sm"
-              variant="ghost"
-              className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
-              title="Chat History"
+              onClick={handleExpand}
+              size="lg"
+              className="h-12 w-12 bg-white/5 backdrop-blur-md border border-white/20 hover:bg-white/10 shadow-2xl !cursor-pointer transition-all duration-500"
+              style={{
+                borderRadius: '32px 32px 32px 4px',
+              }}
             >
-              <FaClockRotateLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={closeWithAnimation}
-              size="sm"
-              variant="ghost"
-              className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
-            >
-              <Minimize2 className="h-4 w-4" />
+              <MessageCircle className="h-6 w-6 text-white" />
             </Button>
           </div>
-        </div>
+
+          {/* Expanded State - Panel */}
+          <div 
+            className={cn(
+              "absolute inset-0 flex flex-col transition-opacity duration-300 z-0",
+              isChatWidgetExtended ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            )}
+          >
+            {/* Header - Draggable */}
+            <div 
+              className="flex items-center justify-between p-4 border-b border-white/10 cursor-grab active:cursor-grabbing"
+              onMouseDown={handleDragStart}
+            >
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-blue-400" />
+                <h3 className="font-semibold text-white">AI Assistant</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowHistory(!showHistory)}
+                  size="sm"
+                  variant="ghost"
+                  className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
+                  title="Chat History"
+                >
+                  <FaClockRotateLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleMinimize}
+                  size="sm"
+                  variant="ghost"
+                  className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
+                >
+                  <Minimize2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
         {/* Chat History Panel */}
         {showHistory && (
@@ -538,14 +488,15 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
           </div>
         </div>
         
-        {/* Resize Handle */}
-        <div
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
-          onMouseDown={handleMouseDown}
-        >
-          <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
-        </div>
-      </Card>
+            {/* Resize Handle */}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
+              onMouseDown={handleMouseDown}
+            >
+              <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
+            </div>
+          </div>
+        </Card>
     </div>
   )
 }

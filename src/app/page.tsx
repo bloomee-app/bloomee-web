@@ -21,7 +21,7 @@ function Loading() {
 }
 
 export default function HomePage() {
-  const { isPanelOpen, togglePanel, isChatWidgetExtended, chatWidgetPosition } = useAppStore()
+  const { isPanelOpen, togglePanel, isChatOpen } = useAppStore()
 
   return (
     <>
@@ -51,19 +51,8 @@ export default function HomePage() {
         {/* Landsat Panel - Now draggable */}
         <LandsatModal className="pointer-events-auto" />
         
-        {/* Chat Widget Extended - Draggable positioning */}
-        {isChatWidgetExtended && (
-          <div 
-            className="fixed pointer-events-auto" 
-            style={{ 
-              zIndex: 9999,
-              left: `${chatWidgetPosition.x}px`,
-              top: `${chatWidgetPosition.y}px`
-            }}
-          >
-            <ChatWidget className="pointer-events-auto" />
-          </div>
-        )}
+        {/* Chat Widget - handles its own positioning and state */}
+        <ChatWidget className="pointer-events-auto" />
 
         {/* Right Side - Comparison Panel Overlay */}
         <ComparisonPanel className="absolute top-4 right-4 bottom-4 z-30 pointer-events-auto" />
@@ -72,11 +61,6 @@ export default function HomePage() {
         <TimeSlider 
           className="absolute bottom-6 z-40 pointer-events-auto"
         />
-
-        {/* Chat Widget minimized state - only show when not extended */}
-        {!isChatWidgetExtended && (
-          <ChatWidget className="fixed bottom-4 left-4 pointer-events-auto w-fit h-fit" />
-        )}
       </main>
 
       {/* Footer */}
