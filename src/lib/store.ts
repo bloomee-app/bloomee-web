@@ -47,6 +47,7 @@ interface AppState {
   // Panel visibility state
   isPanelOpen: boolean
   isMinimized: boolean
+  activeTab: string
 
   // Camera state
   cameraPosition: [number, number, number]
@@ -75,6 +76,7 @@ interface AppState {
   togglePanel: () => void
   setPanelOpen: (open: boolean) => void
   setIsMinimized: (minimized: boolean) => void
+  setActiveTab: (tab: string) => void
   setCameraPosition: (position: [number, number, number]) => void
   setSelectedLocation: (location: { lat: number; lng: number } | null) => void
   setScaleMode: (mode: 'global' | 'regional' | 'local') => void
@@ -92,6 +94,7 @@ export const useAppStore = create<AppState>((set) => ({
   // Initial state
   isPanelOpen: false,
   isMinimized: false,
+  activeTab: 'overview',
   cameraPosition: [0, 0, 3.5],
   selectedLocation: null,
   scaleMode: 'global',
@@ -113,6 +116,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   setIsMinimized: (minimized) =>
     set({ isMinimized: minimized }),
+
+  setActiveTab: (tab) =>
+    set({ activeTab: tab }),
 
   setCameraPosition: (position) =>
     set({ cameraPosition: position }),

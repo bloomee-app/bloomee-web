@@ -2,6 +2,7 @@
 
 import { BarChart3, Leaf } from 'lucide-react'
 import { BloomingApiResponse } from '@/types/landsat'
+import TrendChart from '../charts/TrendChart'
 
 interface TrendsTabProps {
   bloomingData: BloomingApiResponse['data']
@@ -16,6 +17,7 @@ export default function TrendsTab({ bloomingData, getTrendIcon }: TrendsTabProps
         <span>Trend Analysis</span>
       </div>
       
+      {/* Quick Stats */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-white/80 text-sm">
           {getTrendIcon(bloomingData.trends.intensity_trend)}
@@ -31,10 +33,8 @@ export default function TrendsTab({ bloomingData, getTrendIcon }: TrendsTabProps
         </div>
       </div>
 
-      {/* Placeholder for future chart component */}
-      <div className="bg-white/5 p-4 rounded text-center text-white/60 text-sm">
-        📊 Multi-year trend chart will be implemented here
-      </div>
+      {/* Multi-year Trend Chart */}
+      <TrendChart />
     </div>
   )
 }

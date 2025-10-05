@@ -2,6 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BloomingApiResponse } from '@/types/landsat'
+import { useAppStore } from '@/lib/store'
 import OverviewTab from './OverviewTab'
 import TrendsTab from './TrendsTab'
 import InsightsTab from './InsightsTab'
@@ -13,8 +14,12 @@ interface TabContentProps {
 }
 
 export default function TabContent({ bloomingData, getTrendIcon }: TabContentProps) {
+  // CRITICAL: Use global store for activeTab to persist across location changes
+  // DO NOT CHANGE: This ensures tab stays the same when user clicks different locations
+  const { activeTab, setActiveTab } = useAppStore()
+
   return (
-    <Tabs defaultValue="overview" className="h-full flex flex-col cursor-pointer">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col cursor-pointer">
       <TabsList className="grid w-full grid-cols-4 bg-white/10">
         <TabsTrigger value="overview" className="text-xs !cursor-pointer">Overview</TabsTrigger>
         <TabsTrigger value="trends" className="text-xs !cursor-pointer">Trends</TabsTrigger>

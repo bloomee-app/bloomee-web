@@ -129,7 +129,7 @@ export default function ComparisonPanel() {
   console.log('🔍 Rendering FULL panel view')
   return (
     <div className={cn(
-      "fixed top-6 right-6 bottom-12 z-10 w-96 transform transition-transform duration-300",
+      "fixed top-6 right-6 bottom-12 z-10 w-[500px] transform transition-transform duration-300",
       isPanelOpen ? "translate-x-0" : "translate-x-full"
     )}>
       <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col">
