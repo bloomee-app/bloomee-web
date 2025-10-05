@@ -1,4 +1,4 @@
-// Dify AI Service for chat integration
+// Dify AI Service for chat integration (using Next.js API routes)
 export interface DifyMessage {
   id: string
   conversation_id: string
@@ -74,13 +74,9 @@ export interface DifyStreamResponse {
 }
 
 class DifyService {
-  private baseUrl: string
-  private apiKey: string
   private userId: string
 
   constructor() {
-    this.baseUrl = 'https://dify-api.faizath.com/v1'
-    this.apiKey = 'app-xQx8YpYKECfklbRTbcdZ7ZGo'
     this.userId = this.getOrCreateUserId()
   }
 
@@ -98,33 +94,25 @@ class DifyService {
     return userId
   }
 
-  private getHeaders(): HeadersInit {
-    return {
-      'Authorization': `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json',
-    }
-  }
-
-  // Send a chat message to Dify AI
+  // Send a chat message via Next.js API route
   async sendMessage(
     query: string,
     conversationId?: string,
     inputs: Record<string, any> = {},
     responseMode: 'streaming' | 'blocking' = 'streaming'
   ): Promise<DifyChatResponse | ReadableStream<Uint8Array>> {
-    const url = `${this.baseUrl}/chat-messages`
+    const url = '/api/chat'
     
     // According to Dify docs, inputs should be an empty object if no variables are defined
     const requestBody = {
       query,
       inputs: {}, // Always use empty object as per documentation examples
-      response_mode: responseMode,
+      responseMode,
       user: this.userId,
-      ...(conversationId && { conversation_id: conversationId }),
-      auto_generate_name: true
+      ...(conversationId && { conversationId }),
     }
 
-    console.log('Sending request to Dify AI:', {
+    console.log('Sending request to Next.js API:', {
       url,
       requestBody: { ...requestBody, inputs: JSON.stringify({}) }
     })
@@ -132,16 +120,18 @@ class DifyService {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(requestBody)
       })
 
-      console.log('Dify AI response status:', response.status, response.statusText)
+      console.log('Next.js API response status:', response.status, response.statusText)
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Dify API error response:', errorText)
-        throw new Error(`Dify API error: ${response.status} ${response.statusText} - ${errorText}`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Next.js API error response:', errorData)
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error || 'Unknown error'}`)
       }
 
       if (responseMode === 'streaming') {
@@ -151,7 +141,7 @@ class DifyService {
         return response.body as ReadableStream<Uint8Array>
       } else {
         const jsonResponse = await response.json()
-        console.log('Dify AI blocking response:', jsonResponse)
+        console.log('Next.js API blocking response:', jsonResponse)
         return jsonResponse as DifyChatResponse
       }
     } catch (error) {
@@ -160,7 +150,7 @@ class DifyService {
     }
   }
 
-  // Get conversation history
+  // Get conversation history via Next.js API route
   async getMessages(
     conversationId: string,
     firstId?: string,
@@ -176,45 +166,64 @@ class DifyService {
       params.append('first_id', firstId)
     }
 
-    const url = `${this.baseUrl}/messages?${params.toString()}`
+    const url = `/api/chat/history?${params.toString()}`
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
 
-    if (!response.ok) {
-      throw new Error(`Dify API error: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Next.js API error response:', errorData)
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error || 'Unknown error'}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error('Error in getMessages:', error)
+      throw error
     }
-
-    return response.json()
   }
 
-  // Submit feedback for a message
+  // Submit feedback via Next.js API route
   async submitFeedback(
     messageId: string,
     rating: 'like' | 'dislike',
     content?: string
   ): Promise<{ result: string }> {
-    const url = `${this.baseUrl}/messages/${messageId}/feedbacks`
+    const url = '/api/chat/feedback'
     
     const requestBody = {
+      messageId,
       rating,
       user: this.userId,
       ...(content && { content })
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(requestBody)
-    })
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
 
-    if (!response.ok) {
-      throw new Error(`Dify API error: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Next.js API error response:', errorData)
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error || 'Unknown error'}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error('Error in submitFeedback:', error)
+      throw error
     }
-
-    return response.json()
   }
 
   // Parse streaming response
