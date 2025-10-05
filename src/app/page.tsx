@@ -59,7 +59,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="absolute bottom-0 right-6 z-10 p-4">
         <div className="text-white/60 text-sm">
-          <p>Powered by NASA Landsat & Three.js</p>
+          <p>Powered by NASA Landsat</p>
         </div>
       </footer>
     </>

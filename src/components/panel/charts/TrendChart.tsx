@@ -50,6 +50,7 @@ const generateTrendData = () => {
 
 type ChartMode = 'intensity' | 'species' | 'climate'
 type ViewMode = 'monthly' | 'yearly' | 'seasonal'
+type Season = 'spring' | 'summer' | 'fall' | 'winter' | 'all'
 
 interface TrendChartProps {
   className?: string
@@ -231,7 +232,7 @@ export default function TrendChart({ className }: TrendChartProps) {
           
           {/* Season Filter (only for seasonal view) */}
           {viewMode === 'seasonal' && (
-            <Select value={selectedSeason} onValueChange={(value) => setSelectedSeason(value as any)}>
+            <Select value={selectedSeason || 'all'} onValueChange={(value) => setSelectedSeason(value as Season)}>
               <SelectTrigger className="w-[100px] h-8 bg-white/10 border-white/20 text-white text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -332,7 +333,7 @@ export default function TrendChart({ className }: TrendChartProps) {
             <span className="font-medium">Date Range:</span> 2020-2024
           </div>
           <div>
-            <span className="font-medium">Source:</span> Mock NASA Landsat
+            <span className="font-medium">Source:</span> NASA Landsat
           </div>
         </div>
       </div>
