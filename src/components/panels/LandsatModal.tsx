@@ -55,6 +55,59 @@ export default function LandsatModal({ className }: LandsatModalProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
+  // Transform backend API response to LandsatData format
+  const transformToLandsatData = useCallback((apiResponse: any, location: { lat: number, lng: number }, region: string, isRealData: boolean = true): LandsatData => {
+    const ndviScore = apiResponse.ndvi_score || 0
+    
+    // Determine bloom analysis based on NDVI score and bloom status
+    const bloomStatus = apiResponse.bloom_status || 'Unknown'
+    const isBlooming = bloomStatus.includes('Bloom') && ndviScore > 0.3
+    const bloomIntensity = Math.min(1, Math.max(0, (ndviScore - 0.1) / 0.6)) // Normalize to 0-1
+    const bloomStage = determineBloomStage(ndviScore, bloomStatus)
+    
+    // Determine data quality based on cloud cover (mock since backend doesn't provide this)
+    const cloudCover = Math.random() * 30 // Mock cloud cover 0-30%
+    const dataQuality = cloudCover < 10 ? 'excellent' : cloudCover < 20 ? 'good' : cloudCover < 30 ? 'fair' : 'poor'
+    
+    // Determine ecological insights based on NDVI and weather
+    const vegetationHealth = ndviScore > 0.6 ? 'excellent' : ndviScore > 0.4 ? 'good' : ndviScore > 0.2 ? 'moderate' : 'poor'
+    const waterStress = apiResponse.weather?.precipitation_mm > 10 ? 'low' : apiResponse.weather?.precipitation_mm > 5 ? 'moderate' : 'high'
+    const biodiversity = ndviScore > 0.5 ? 'high' : ndviScore > 0.3 ? 'moderate' : 'low'
+    
+    return {
+      location: {
+        lat: location.lat,
+        lng: location.lng,
+        name: getRegionName(region)
+      },
+      acquisitionDate: apiResponse.date || new Date().toISOString().split('T')[0],
+      satellite: 'Landsat-9', // Default satellite
+      rgbImageUrl: apiResponse.satellite_image_url || '',
+      ndviData: [], // Mock 2D array - would be populated with actual NDVI data
+      cloudCover,
+      dataQuality,
+      processingLevel: 'L1TP' as 'L1TP' | 'L1GT' | 'L1GS',
+      ndviStats: {
+        mean: ndviScore,
+        min: Math.max(0, ndviScore - 0.2),
+        max: Math.min(1, ndviScore + 0.2),
+        stdDev: 0.1 // Mock standard deviation
+      },
+      bloomAnalysis: {
+        isBlooming,
+        bloomIntensity,
+        bloomConfidence: 0.8,
+        bloomStage: bloomStage as 'pre-bloom' | 'early-bloom' | 'peak-bloom' | 'late-bloom' | 'post-bloom'
+      },
+      ecologicalInsights: {
+        vegetationHealth,
+        waterStress,
+        fireRisk: waterStress === 'low' ? 'high' : waterStress === 'moderate' ? 'moderate' : 'low',
+        biodiversity
+      }
+    }
+  }, [])
+
   // Test API connection on component mount
   useEffect(() => {
     testApiConnection()
@@ -111,7 +164,7 @@ export default function LandsatModal({ className }: LandsatModalProps) {
       
       fetchLandsatData()
     }
-  }, [selectedLocation, isLandsatModalOpen])
+  }, [selectedLocation, isLandsatModalOpen, transformToLandsatData])
 
 
   // Create fallback Landsat data when API is unavailable
@@ -159,58 +212,6 @@ export default function LandsatModal({ className }: LandsatModalProps) {
 
   // Helper function getCurrentSeason is now imported from locationSpecificData
 
-  // Transform backend API response to LandsatData format
-  const transformToLandsatData = (apiResponse: any, location: { lat: number, lng: number }, region: string, isRealData: boolean = true): LandsatData => {
-    const ndviScore = apiResponse.ndvi_score || 0
-    
-    // Determine bloom analysis based on NDVI score and bloom status
-    const bloomStatus = apiResponse.bloom_status || 'Unknown'
-    const isBlooming = bloomStatus.includes('Bloom') && ndviScore > 0.3
-    const bloomIntensity = Math.min(1, Math.max(0, (ndviScore - 0.1) / 0.6)) // Normalize to 0-1
-    const bloomStage = determineBloomStage(ndviScore, bloomStatus)
-    
-    // Determine data quality based on cloud cover (mock since backend doesn't provide this)
-    const cloudCover = Math.random() * 30 // Mock cloud cover 0-30%
-    const dataQuality = cloudCover < 10 ? 'excellent' : cloudCover < 20 ? 'good' : cloudCover < 30 ? 'fair' : 'poor'
-    
-    // Determine ecological insights based on NDVI and weather
-    const vegetationHealth = ndviScore > 0.6 ? 'excellent' : ndviScore > 0.4 ? 'good' : ndviScore > 0.2 ? 'moderate' : 'poor'
-    const waterStress = apiResponse.weather?.precipitation_mm > 10 ? 'low' : apiResponse.weather?.precipitation_mm > 5 ? 'moderate' : 'high'
-    const biodiversity = ndviScore > 0.5 ? 'high' : ndviScore > 0.3 ? 'moderate' : 'low'
-    
-    return {
-      location: {
-        lat: location.lat,
-        lng: location.lng,
-        name: getRegionName(region)
-      },
-      acquisitionDate: apiResponse.date || new Date().toISOString().split('T')[0],
-      satellite: 'Landsat-9', // Default satellite
-      rgbImageUrl: apiResponse.satellite_image_url || '',
-      ndviData: [], // Mock 2D array - would be populated with actual NDVI data
-      cloudCover,
-      dataQuality,
-      processingLevel: 'L1TP' as 'L1TP' | 'L1GT' | 'L1GS',
-      ndviStats: {
-        mean: ndviScore,
-        min: Math.max(0, ndviScore - 0.2),
-        max: Math.min(1, ndviScore + 0.2),
-        stdDev: 0.1 // Mock standard deviation
-      },
-      bloomAnalysis: {
-        isBlooming,
-        bloomIntensity,
-        bloomConfidence: 0.8,
-        bloomStage: bloomStage as 'pre-bloom' | 'early-bloom' | 'peak-bloom' | 'late-bloom' | 'post-bloom'
-      },
-      ecologicalInsights: {
-        vegetationHealth,
-        waterStress,
-        fireRisk: waterStress === 'low' ? 'high' : waterStress === 'moderate' ? 'moderate' : 'low',
-        biodiversity
-      }
-    }
-  }
 
   // Helper function to determine bloom stage based on NDVI and status
   const determineBloomStage = (ndvi: number, status: string): string => {
@@ -560,7 +561,7 @@ export default function LandsatModal({ className }: LandsatModalProps) {
               {/* Satellite Imagery */}
               <div className="bg-white/5 rounded-lg p-4">
                 <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <Image className="h-4 w-4 text-purple-400" />
+                  <Satellite className="h-4 w-4 text-purple-400" />
                   Satellite Imagery
                 </h3>
                 <div className="aspect-video bg-gray-800/50 rounded-lg overflow-hidden">

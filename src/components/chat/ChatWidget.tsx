@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { 
@@ -57,15 +57,8 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setChatWidgetExtended
   } = useAppStore()
 
-  // Load chat history and conversations on mount
-  useEffect(() => {
-    if (isChatOpen) {
-      loadChatHistory()
-    }
-  }, [isChatOpen])
-
   // Load chat history from localStorage
-  const loadChatHistory = () => {
+  const loadChatHistory = useCallback(() => {
     try {
       const historyConversations = chatHistoryService.getConversations()
       setConversations(historyConversations)
@@ -92,7 +85,14 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       setError('Failed to load chat history')
       createNewConversation()
     }
-  }
+  }, [])
+
+  // Load chat history and conversations on mount
+  useEffect(() => {
+    if (isChatOpen) {
+      loadChatHistory()
+    }
+  }, [isChatOpen, loadChatHistory])
 
   // Create a new conversation
   const createNewConversation = () => {
@@ -127,7 +127,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       }
     }
     setIsLoaded(true)
-  }, [])
+  }, [panelSize.height, setChatWidgetExtended])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       setPanelPosition(prev => ({ ...prev, y: properY }))
       setIsPositionInitialized(true)
     }
-  }, [isChatWidgetExtended, isPositionInitialized])
+  }, [isChatWidgetExtended, isPositionInitialized, panelSize.height])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !currentConversationId) return
@@ -380,14 +380,14 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     })
   }
 
-  const handleDragMove = (e: MouseEvent) => {
+  const handleDragMove = useCallback((e: MouseEvent) => {
     if (!isDragging || isResizing) return
 
     const newX = Math.max(0, Math.min(window.innerWidth - panelSize.width, e.clientX - dragStart.x))
     const newY = Math.max(0, Math.min(window.innerHeight - panelSize.height, e.clientY - dragStart.y))
     
     setPanelPosition({ x: newX, y: newY })
-  }
+  }, [isDragging, isResizing, panelSize.width, panelSize.height, dragStart.x, dragStart.y])
 
   // Resize functionality
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -402,7 +402,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     })
   }
 
-  const handleResizeMove = (e: MouseEvent) => {
+  const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return
 
     const deltaX = e.clientX - resizeStart.x
@@ -420,7 +420,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     if (newX !== panelPosition.x || newY !== panelPosition.y) {
       setPanelPosition({ x: Math.max(0, newX), y: Math.max(0, newY) })
     }
-  }
+  }, [isResizing, resizeStart.x, resizeStart.y, resizeStart.width, resizeStart.height, panelPosition.x, panelPosition.y])
 
   const handleMouseUp = () => {
     setIsResizing(false)
@@ -454,7 +454,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
-  }, [isResizing, isDragging, panelPosition.x, panelPosition.y])
+  }, [isResizing, isDragging, panelPosition.x, panelPosition.y, handleDragMove, handleResizeMove])
 
   if (!isChatOpen) return null
 
