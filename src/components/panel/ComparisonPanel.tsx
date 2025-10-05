@@ -5,71 +5,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { useEffect, useState, useRef } from 'react'
 import { BloomingApiResponse } from '@/types/landsat'
-import { ArrowUp, ArrowDown, Leaf, Droplets, Sun, X, Minimize2, Maximize2 } from 'lucide-react'
+import { ArrowUp, ArrowDown, X, Minimize2, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import TabContent from './tabs/TabContent'
 
 export default function ComparisonPanel() {
-  const { isPanelOpen, setPanelOpen, selectedLocation } = useAppStore()
+  // CRITICAL: These store values are essential for auto-open behavior
+  // DO NOT REMOVE: selectedLocation triggers panel auto-open when globe is clicked
+  const { isPanelOpen, setPanelOpen, selectedLocation, isMinimized, setIsMinimized } = useAppStore()
   const [bloomingData, setBloomingData] = useState<BloomingApiResponse['data'] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const autoMinimizeTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Fungsi untuk mengatur auto-minimize timer
-  const resetAutoMinimizeTimer = () => {
-    if (autoMinimizeTimerRef.current) {
-      clearTimeout(autoMinimizeTimerRef.current)
-    }
-    
-    if (isPanelOpen && !isMinimized) {
-      autoMinimizeTimerRef.current = setTimeout(() => {
-        setIsMinimized(true)
-      }, 5000) // Auto-minimize setelah 5 detik
-    }
-  }
 
   // Fungsi untuk maximize panel
   const handleMaximize = () => {
     setIsMinimized(false)
-    resetAutoMinimizeTimer()
   }
 
   // Fungsi untuk minimize panel
   const handleMinimize = () => {
     setIsMinimized(true)
-    if (autoMinimizeTimerRef.current) {
-      clearTimeout(autoMinimizeTimerRef.current)
-    }
   }
 
-  // Cleanup timer saat component unmount
   useEffect(() => {
-    return () => {
-      if (autoMinimizeTimerRef.current) {
-        clearTimeout(autoMinimizeTimerRef.current)
-      }
-    }
-  }, [])
-
-  // Auto-maximize saat ada lokasi baru yang dipilih
-  useEffect(() => {
-    if (selectedLocation && isPanelOpen && isMinimized) {
-      setIsMinimized(false)
-    }
-  }, [selectedLocation, isPanelOpen])
-
-  // Reset timer saat ada interaksi atau data baru
-  useEffect(() => {
-    if (isPanelOpen && !isMinimized) {
-      resetAutoMinimizeTimer()
-    }
-  }, [isPanelOpen, isMinimized, bloomingData, selectedLocation])
-
-  useEffect(() => {
-    if (!selectedLocation || !isPanelOpen) {
+    // CRITICAL: Always clear data when no location is selected
+    // But don't clear data just because panel is closed - it might be minimized
+    if (!selectedLocation) {
       setBloomingData(null)
       setError(null)
+      return
+    }
+
+    // Only fetch data if panel is actually open (not minimized)
+    if (!isPanelOpen) {
       return
     }
 
@@ -104,7 +72,32 @@ export default function ComparisonPanel() {
     fetchBloomingData()
   }, [selectedLocation, isPanelOpen])
 
-  if (!isPanelOpen) return null
+  // CRITICAL: Panel opening is controlled by Globe click (store.setPanelOpen)
+  // We intentionally avoid auto-opening here to allow manual close/minimize
+  // DO NOT CHANGE: Keeps user controls predictable
+  useEffect(() => {
+    // no-op by design
+  }, [selectedLocation, isPanelOpen])
+
+  // CRITICAL: Minimize/expand is user-driven; Globe click explicitly unminimizes
+  // DO NOT CHANGE: Prevents hidden state flips after user action
+  useEffect(() => {
+    // no-op by design
+  }, [isMinimized])
+
+  // CRITICAL: Always render panel when location is selected, even if minimized
+  // DO NOT CHANGE: This allows panel to show minimized state and auto-expand
+  // Only return null if no location is selected AND panel is closed
+  if (!selectedLocation) return null
+
+  // Debug: Log current state
+  console.log('🖼️ ComparisonPanel render state:', { 
+    isPanelOpen, 
+    isMinimized, 
+    selectedLocation: selectedLocation ? `${selectedLocation.lat}, ${selectedLocation.lng}` : null,
+    willShowMinimized: isMinimized,
+    willShowFull: isPanelOpen && !isMinimized
+  })
 
   const getTrendIcon = (trend: string) => {
     if (trend.includes('+')) return <ArrowUp className="text-green-400 h-4 w-4" />
@@ -112,8 +105,11 @@ export default function ComparisonPanel() {
     return null
   }
 
-  // Tampilan minimized
+  // CRITICAL: Minimized view - shows floating button when panel is minimized
+  // DO NOT MODIFY: This allows users to restore panel after minimizing
+  // The panel will auto-expand when new location is selected (see useEffect above)
   if (isMinimized) {
+    console.log('🔽 Rendering MINIMIZED panel view')
     return (
       <div className="fixed top-6 right-6 z-10 transform transition-transform duration-300">
         <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
@@ -130,6 +126,7 @@ export default function ComparisonPanel() {
     )
   }
 
+  console.log('🔍 Rendering FULL panel view')
   return (
     <div className={cn(
       "fixed top-6 right-6 bottom-12 z-10 w-96 transform transition-transform duration-300",
@@ -165,11 +162,7 @@ export default function ComparisonPanel() {
             }
           </CardDescription>
         </CardHeader>
-        <CardContent 
-          className="space-y-6 flex-1 overflow-y-auto"
-          onMouseMove={resetAutoMinimizeTimer}
-          onScroll={resetAutoMinimizeTimer}
-        >
+        <CardContent className="flex-1 overflow-hidden">
           {loading && (
             <div className="text-white/80 text-sm text-center py-4">
               Loading blooming data...
@@ -183,95 +176,14 @@ export default function ComparisonPanel() {
           )}
 
           {bloomingData && !loading && !error && (
-            <>
-              {/* Lokasi dan Biome */}
-              <div className="flex items-center gap-2 text-white/90 text-sm">
-                <Leaf className="h-4 w-4" />
-                <p><strong>Biome:</strong> {bloomingData.location.biome.replace('_', ' ')}</p>
-              </div>
-
-              {/* Ringkasan Tren */}
-              <div className="space-y-2">
-                <h4 className="text-white font-medium flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
-                  <span>Trends</span>
-                </h4>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-white/80 text-sm">
-                    {getTrendIcon(bloomingData.trends.intensity_trend)}
-                    <span>Intensity: {bloomingData.trends.intensity_trend}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/80 text-sm">
-                    {getTrendIcon(bloomingData.trends.blooming_advance_days_per_decade.toString())}
-                    <span>Advance: {bloomingData.trends.blooming_advance_days_per_decade} days/decade</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/80 text-sm">
-                    <Leaf className="h-4 w-4 text-white/60" />
-                    <span>Species: {bloomingData.trends.species_composition_change}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Event Terkini */}
-              <div className="space-y-2">
-                <h4 className="text-white font-medium">Recent Events</h4>
-                <div className="space-y-2">
-                  {bloomingData.temporal_data.slice(-3).map((yearData) => (
-                    <div key={yearData.year} className="bg-white/5 p-3 rounded text-sm">
-                      <div className="text-white/90 font-medium">
-                        <span className="text-blue-300">{yearData.summary.dominant_species}</span> in {yearData.year}
-                      </div>
-                      <div className="flex justify-between text-white/70 text-xs mt-1">
-                        <span>{yearData.blooming_events.length} events</span>
-                        <span>Avg Intensity: {yearData.summary.avg_intensity.toFixed(2)}</span>
-                      </div>
-                      <p className="text-white/60 text-xs mt-1">
-                        {yearData.summary.ecological_insights}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Detail Cuaca */}
-              {bloomingData.temporal_data[0] && (
-                <div className="space-y-2">
-                  <h4 className="text-white font-medium">Weather Correlation</h4>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-white/80">
-                    <div className="flex items-center gap-2">
-                      <Sun className="h-4 w-4 text-yellow-300" />
-                      <span>Temp: {bloomingData.temporal_data[0].blooming_events[0]?.weather_correlation.temperature_avg.toFixed(1)}°C</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Droplets className="h-4 w-4 text-blue-300" />
-                      <span>Precip: {bloomingData.temporal_data[0].blooming_events[0]?.weather_correlation.precipitation_total.toFixed(1)}mm</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Metadata */}
-              <div className="text-white/60 text-xs border-t border-white/10 pt-2">
-                Last updated: {new Date(bloomingData.metadata.last_updated).toLocaleDateString()}
-              </div>
-            </>
+            <TabContent bloomingData={bloomingData} getTrendIcon={getTrendIcon} />
           )}
 
-          {!selectedLocation && !loading && !error && (
+          {(!loading && !error && !selectedLocation) && (
             <div className="text-white/80 text-sm text-center py-4">
               Click on the globe to view blooming data for that location.
             </div>
           )}
-
-          <div className="flex gap-2 pt-2">
-            <Button
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!bloomingData}
-            >
-              View Details
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

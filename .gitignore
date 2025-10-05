@@ -32,3 +32,4 @@ node_modules/
 # tasks/ 
 .next/
 vertex-earth/
+docs/

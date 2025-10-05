@@ -69,7 +69,7 @@ function EarthGlobe() {
   const globeUVRef = useRef<THREE.Vector2>(new THREE.Vector2())
 
   // Store hook untuk update selected location
-  const { setSelectedLocation, setPanelOpen } = useAppStore()
+  const { setSelectedLocation, setPanelOpen, setIsMinimized } = useAppStore()
   
   // Load textures - EXACT paths from original vertex-earth
   const colorMap = useTexture('/textures/00_earthmap1k.jpg')
@@ -221,6 +221,8 @@ function EarthGlobe() {
     // Update store dengan koordinat yang diklik
     setSelectedLocation({ lat, lng })
     setPanelOpen(true)
+    setIsMinimized(false) // CRITICAL: Ensure panel is not minimized when globe is clicked
+    console.log('🌍 Globe click: Setting panel open and not minimized for location:', { lat, lng })
   }
 
   // Animation loop - EXACT from original vertex-earth
