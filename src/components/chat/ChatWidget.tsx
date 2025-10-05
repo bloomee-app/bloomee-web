@@ -9,19 +9,21 @@ import {
   Bot, 
   User,
   Loader2,
-  GripVertical
+  GripVertical,
+  Trash2,
+  Download,
+  Upload
 } from 'lucide-react'
 import { FaClockRotateLeft } from "react-icons/fa6"
 import { IoChatbubbleOutline } from "react-icons/io5";
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
-
-interface ChatMessage {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-}
+import { difyService } from '@/lib/difyService'
+import { 
+  chatHistoryService, 
+  ChatMessage, 
+  Conversation 
+} from '@/lib/chatHistoryService'
 
 interface ChatWidgetProps {
   className?: string
@@ -39,6 +41,9 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 0 }) // Will be calculated to bottom position
   const [isPositionInitialized, setIsPositionInitialized] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>()
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<HTMLDivElement>(null)
   
@@ -51,17 +56,60 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setChatWidgetExtended
   } = useAppStore()
 
-  // Initialize with welcome message
+  // Load chat history and conversations on mount
   useEffect(() => {
-    if (isChatOpen && messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        type: 'assistant',
-        content: 'Hello! I\'m your ecological AI assistant. Ask me about blooming patterns, biodiversity, climate impacts, or conservation recommendations for any location you select on the globe.',
-        timestamp: new Date()
-      }])
+    if (isChatOpen) {
+      loadChatHistory()
     }
-  }, [isChatOpen, messages.length])
+  }, [isChatOpen])
+
+  // Load chat history from localStorage
+  const loadChatHistory = () => {
+    try {
+      const historyConversations = chatHistoryService.getConversations()
+      setConversations(historyConversations)
+      
+      const savedConversationId = chatHistoryService.getCurrentConversationId()
+      
+      if (savedConversationId && historyConversations.find(c => c.id === savedConversationId)) {
+        // Load existing conversation
+        setCurrentConversationId(savedConversationId)
+        const savedMessages = chatHistoryService.getMessages(savedConversationId)
+        setMessages(savedMessages)
+      } else if (historyConversations.length > 0) {
+        // Load most recent conversation
+        const mostRecent = historyConversations[0]
+        setCurrentConversationId(mostRecent.id)
+        const savedMessages = chatHistoryService.getMessages(mostRecent.id)
+        setMessages(savedMessages)
+      } else {
+        // Create new conversation with welcome message
+        createNewConversation()
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error)
+      setError('Failed to load chat history')
+      createNewConversation()
+    }
+  }
+
+  // Create a new conversation
+  const createNewConversation = () => {
+    const newConversation = chatHistoryService.createConversation()
+    setCurrentConversationId(newConversation.id)
+    chatHistoryService.setCurrentConversation(newConversation.id)
+    
+    const welcomeMessage: ChatMessage = {
+      id: 'welcome',
+      type: 'assistant',
+      content: 'Hello! I\'m your ecological AI assistant powered by Dify AI. Ask me about blooming patterns, biodiversity, climate impacts, or conservation recommendations for any location you select on the globe.',
+      timestamp: new Date()
+    }
+    
+    setMessages([welcomeMessage])
+    chatHistoryService.addMessage(newConversation.id, welcomeMessage)
+    setConversations(prev => [newConversation, ...prev])
+  }
 
   // Load saved state from localStorage on mount
   useEffect(() => {
@@ -102,7 +150,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   }, [isChatWidgetExtended, isPositionInitialized, panelSize.height])
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return
+    if (!inputValue.trim() || isLoading || !currentConversationId) return
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -112,23 +160,69 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
 
     setMessages(prev => [...prev, userMessage])
+    chatHistoryService.addMessage(currentConversationId, userMessage)
+    
+    const query = inputValue.trim()
     setInputValue('')
     setIsLoading(true)
+    setError(null)
 
-    // Mock AI response
-    const aiResponse = await generateMockResponse(inputValue.trim())
-    
-    const assistantMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      type: 'assistant',
-      content: aiResponse,
-      timestamp: new Date()
-    }
+    try {
+      // Send message to Dify AI (using blocking mode first for debugging)
+      // According to Dify docs, inputs should be empty object if no variables are defined
+      const response = await difyService.sendMessage(
+        query,
+        currentConversationId,
+        {}, // Empty inputs object as per documentation
+        'blocking'
+      )
 
-    setTimeout(() => {
+      // Handle blocking response
+      if (response && typeof response === 'object' && 'answer' in response) {
+        const difyResponse = response as any
+        
+        const assistantMessage: ChatMessage = {
+          id: difyResponse.message_id || (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: difyResponse.answer || 'No response received',
+          timestamp: new Date(),
+          conversationId: difyResponse.conversation_id,
+          messageId: difyResponse.message_id,
+          retrieverResources: difyResponse.retriever_resources
+        }
+
+        setMessages(prev => [...prev, assistantMessage])
+        chatHistoryService.addMessage(currentConversationId, assistantMessage)
+        
+        // Update conversation ID if it changed
+        if (difyResponse.conversation_id && difyResponse.conversation_id !== currentConversationId) {
+          setCurrentConversationId(difyResponse.conversation_id)
+          chatHistoryService.setCurrentConversation(difyResponse.conversation_id)
+        }
+      } else {
+        throw new Error('Invalid response format from Dify AI')
+      }
+    } catch (error) {
+      console.error('Error sending message to Dify AI:', error)
+      
+      // Fallback to mock response if Dify AI fails
+      const mockResponse = await generateMockResponse(query)
+      
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: mockResponse,
+        timestamp: new Date()
+      }
+      
       setMessages(prev => [...prev, assistantMessage])
+      chatHistoryService.addMessage(currentConversationId, assistantMessage)
+      
+      // Show warning about fallback
+      setError('Using fallback response. Dify AI configuration may need adjustment.')
+    } finally {
       setIsLoading(false)
-    }, 1000 + Math.random() * 2000)
+    }
   }
 
   const handleExpand = () => {
@@ -146,6 +240,81 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setChatWidgetExtended(false)
   }
 
+  // Switch to a different conversation
+  const switchConversation = (conversationId: string) => {
+    setCurrentConversationId(conversationId)
+    chatHistoryService.setCurrentConversation(conversationId)
+    const conversationMessages = chatHistoryService.getMessages(conversationId)
+    setMessages(conversationMessages)
+    setShowHistory(false)
+  }
+
+  // Start a new conversation
+  const startNewConversation = () => {
+    createNewConversation()
+    setShowHistory(false)
+  }
+
+  // Delete a conversation
+  const deleteConversation = (conversationId: string) => {
+    chatHistoryService.deleteConversation(conversationId)
+    setConversations(prev => prev.filter(c => c.id !== conversationId))
+    
+    if (conversationId === currentConversationId) {
+      startNewConversation()
+    }
+  }
+
+  // Export chat history
+  const exportHistory = () => {
+    const historyData = chatHistoryService.exportHistory()
+    const blob = new Blob([historyData], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bloome-chat-history-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // Import chat history
+  const importHistory = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const success = chatHistoryService.importHistory(content)
+        
+        if (success) {
+          loadChatHistory()
+          setError(null)
+        } else {
+          setError('Failed to import chat history. Please check the file format.')
+        }
+      } catch (error) {
+        setError('Failed to import chat history. Please check the file format.')
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset input
+    event.target.value = ''
+  }
+
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  // Fallback mock response function
   const generateMockResponse = async (userInput: string): Promise<string> => {
     const location = selectedLocation
     const biome = bloomingData?.location?.biome || 'unknown'
@@ -174,13 +343,6 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
     
     return `That's an interesting question about ${locationName}! Based on the available data for this ${biome} region, I can provide insights about blooming patterns, biodiversity, climate impacts, or conservation strategies. Could you be more specific about what aspect you'd like me to explain?`
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
   }
 
   // Drag functionality
@@ -338,20 +500,90 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
             {/* Chat History Panel */}
             {showHistory && (
               <div className="border-b border-white/10 p-4 bg-white/5">
-                <h4 className="text-sm font-medium text-white mb-3">Chat History</h4>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                    <div className="font-medium">Session 1 - Today 14:30</div>
-                    <div className="text-white/50">Discussed blooming patterns in Amazon rainforest...</div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-white">Chat History</h4>
+                  <div className="flex gap-1">
+                    <Button
+                      onClick={startNewConversation}
+                      size="sm"
+                      variant="ghost"
+                      className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer h-6 px-2 text-xs"
+                    >
+                      New
+                    </Button>
+                    <Button
+                      onClick={exportHistory}
+                      size="sm"
+                      variant="ghost"
+                      className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer h-6 px-2"
+                      title="Export History"
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                    <label className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer h-6 px-2 rounded flex items-center justify-center text-xs">
+                      <Upload className="h-3 w-3" />
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={importHistory}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                    <div className="font-medium">Session 2 - Today 12:15</div>
-                    <div className="text-white/50">Asked about biodiversity conservation strategies...</div>
+                </div>
+                
+                {error && (
+                  <div className="text-xs text-red-400 mb-2 p-2 bg-red-500/10 rounded">
+                    {error}
                   </div>
-                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                    <div className="font-medium">Session 3 - Yesterday 16:45</div>
-                    <div className="text-white/50">Explored climate impact on flowering seasons...</div>
-                  </div>
+                )}
+                
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {conversations.length === 0 ? (
+                    <div className="text-xs text-white/50 p-2 text-center">
+                      No conversations yet
+                    </div>
+                  ) : (
+                    conversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        className={cn(
+                          "text-xs p-2 rounded cursor-pointer transition-colors group",
+                          conversation.id === currentConversationId
+                            ? "bg-blue-500/20 text-white border border-blue-400/30"
+                            : "text-white/70 bg-white/10 hover:bg-white/20"
+                        )}
+                        onClick={() => switchConversation(conversation.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {conversation.title}
+                            </div>
+                            <div className="text-white/50 text-xs">
+                              {conversation.updatedAt.toLocaleDateString()} {conversation.updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            {conversation.lastMessage && (
+                              <div className="text-white/40 truncate mt-1">
+                                {conversation.lastMessage}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteConversation(conversation.id)
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 hover:bg-red-500/10 !cursor-pointer h-4 w-4 p-0 ml-2"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -381,6 +613,22 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
                     )}
                   >
                     <div className="whitespace-pre-wrap">{message.content}</div>
+                    
+                    {/* Show retriever resources for assistant messages */}
+                    {message.type === 'assistant' && message.retrieverResources && message.retrieverResources.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/10">
+                        <div className="text-xs text-white/60 mb-1">Sources:</div>
+                        <div className="space-y-1">
+                          {message.retrieverResources.map((resource, index) => (
+                            <div key={index} className="text-xs text-white/50 bg-white/5 rounded p-1">
+                              <div className="font-medium">{resource.dataset_name}</div>
+                              <div className="truncate">{resource.document_name}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className={cn(
                       "text-xs mt-1 opacity-60",
                       message.type === 'user' ? 'text-blue-100' : 'text-white/60'
