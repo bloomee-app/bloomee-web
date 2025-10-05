@@ -82,6 +82,8 @@ interface AppState {
   selectedSeason: Season | null
   trendMode: TrendMode
   viewMode: ViewMode
+  currentDate: Date
+  bloomMode: boolean
 
   // Insights and trend data state
   trendData: TrendDataPoint[]
@@ -115,8 +117,23 @@ interface AppState {
   setTrendData: (data: TrendDataPoint[]) => void
   setEcologicalInsights: (insights: EcologicalInsight[]) => void
   setConservationInsights: (insights: ConservationInsight[]) => void
+  setCurrentDate: (date: Date) => void
+  setBloomMode: (enabled: boolean) => void
 }
 
+
+// Helper function to get bloom mode from localStorage with fallback
+const getInitialBloomMode = (): boolean => {
+  if (typeof window === 'undefined') return false // SSR fallback
+  
+  try {
+    const saved = localStorage.getItem('bloome-bloom-mode')
+    return saved !== null ? JSON.parse(saved) : false // Default to false (off)
+  } catch (error) {
+    console.warn('Failed to load bloom mode from localStorage:', error)
+    return false // Default to false (off)
+  }
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state - always start with default values to avoid hydration mismatch
@@ -142,6 +159,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedSeason: 'all',
   trendMode: 'intensity',
   viewMode: 'monthly',
+  currentDate: new Date('2023-06-08'),
+  bloomMode: getInitialBloomMode(), // Load from localStorage, default to false (off)
   trendData: [],
   ecologicalInsights: [],
   conservationInsights: [],
@@ -216,5 +235,22 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setConservationInsights: (insights) =>
     set({ conservationInsights: insights }),
+
+  setCurrentDate: (date) =>
+    set({ currentDate: date }),
+
+  setBloomMode: (enabled) => {
+    // Save to localStorage for persistence
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('bloome-bloom-mode', JSON.stringify(enabled))
+        console.log(`🌸 Bloom mode ${enabled ? 'enabled' : 'disabled'} and saved to localStorage`)
+      } catch (error) {
+        console.warn('Failed to save bloom mode to localStorage:', error)
+      }
+    }
+    
+    set({ bloomMode: enabled })
+  },
 
 }))

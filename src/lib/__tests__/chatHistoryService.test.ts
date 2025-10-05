@@ -212,3 +212,4 @@ describe('ChatHistoryService', () => {
     expect(stats.newestConversation).toEqual(new Date('2023-01-02T00:00:00.000Z'))
   })
 })
+

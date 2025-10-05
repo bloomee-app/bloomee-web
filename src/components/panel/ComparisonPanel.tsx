@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { BloomingApiResponse } from '@/types/landsat'
-import { ArrowUp, ArrowDown, X, Minimize2, Maximize2, GripVertical } from 'lucide-react'
+import { ArrowUp, ArrowDown, X, Minimize2, Maximize2, GripVertical, Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TabContent from './tabs/TabContent'
 import { 
@@ -14,7 +14,8 @@ import {
   mapLocationToRegion, 
   mapLocationToRegionWithVariety,
   getRegionName,
-  getVariedMockLandsatImage
+  getVariedMockLandsatImage,
+  testApiConnection
 } from '@/lib/bloomingApi'
 import { 
   generateLocationSpecificNDVI, 
@@ -211,6 +212,11 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     }
   }, [isPanelOpen, selectedLocation])
 
+  // Test API connection on component mount
+  useEffect(() => {
+    testApiConnection()
+  }, [])
+
   useEffect(() => {
     if (!selectedLocation || !isPanelOpen) {
       setBloomingData(null)
@@ -223,8 +229,8 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
       setError(null)
       
         // Always provide fallback data - no more "failed" states
-        // Use variety function for demo purposes to show different regions
-        const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, true)
+        // Use accurate mapping (no forced variety for better accuracy)
+        const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, false)
       const currentDate = new Date().toISOString().split('T')[0]
       
       try {
@@ -481,9 +487,24 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
                   <CardTitle className="text-white">
                     {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
                   </CardTitle>
-                  <CardDescription className="text-blue-200">
+                  <CardDescription className="text-blue-200 flex items-center gap-2">
                     {selectedLocation
-                      ? `${selectedLocation.lat.toFixed(4)}°, ${selectedLocation.lng.toFixed(4)}°`
+                      ? (
+                        <>
+                          <span>{selectedLocation.lat.toFixed(4)}°, {selectedLocation.lng.toFixed(4)}°</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-blue-200 hover:bg-white/10 hover:text-white !cursor-pointer"
+                            onClick={() => {
+                              const coords = `${selectedLocation.lat.toFixed(4)}°, ${selectedLocation.lng.toFixed(4)}°`
+                              navigator.clipboard.writeText(coords)
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )
                       : 'Select a location on the globe'
                     }
                   </CardDescription>

@@ -3,16 +3,17 @@
 import React, { useState, useEffect } from 'react'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, Minimize2, Maximize2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, Minimize2, Maximize2, Flower } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAppStore } from '@/lib/store'
 
 interface TimeSliderProps {
   className?: string
 }
 
 export default function TimeSlider({ className }: TimeSliderProps) {
-  const [currentDate, setCurrentDate] = useState(new Date('2023-06-08'))
+  const { currentDate, setCurrentDate, bloomMode, setBloomMode } = useAppStore()
   const [isMinimized, setIsMinimized] = useState(false) 
   const [isLoaded, setIsLoaded] = useState(false)
 
@@ -109,6 +110,18 @@ export default function TimeSlider({ className }: TimeSliderProps) {
             <Button 
               size="icon" 
               variant="ghost" 
+              className={cn(
+                "h-6 w-6 !cursor-pointer transition-colors",
+                bloomMode ? "text-green-400 hover:text-green-300" : "text-white/60 hover:text-white"
+              )}
+              onClick={() => setBloomMode(!bloomMode)}
+              title={bloomMode ? "Disable bloom visualization" : "Enable bloom visualization"}
+            >
+              <Flower className="h-3 w-3" />
+            </Button>
+            <Button 
+              size="icon" 
+              variant="ghost" 
               className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" 
               onClick={toggleMinimized}
             >
@@ -179,6 +192,20 @@ export default function TimeSlider({ className }: TimeSliderProps) {
             <div className="text-center font-mono text-sm tracking-wide min-w-[80px]">
               {currentDate.getDate()}
             </div>
+
+            {/* Bloom Toggle */}
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className={cn(
+                "h-6 w-6 !cursor-pointer transition-colors",
+                bloomMode ? "text-green-400 hover:text-green-300" : "text-white/60 hover:text-white"
+              )}
+              onClick={() => setBloomMode(!bloomMode)}
+              title={bloomMode ? "Disable bloom visualization" : "Enable bloom visualization"}
+            >
+              <Flower className="h-3 w-3" />
+            </Button>
 
             {/* Minimize Button */}
             <Button 

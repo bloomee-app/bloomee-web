@@ -369,3 +369,4 @@ function generateEventMetadata(eventType: keyof LocationEventPatterns['eventType
   
   return Object.keys(metadata).length > 0 ? metadata : undefined
 }
+

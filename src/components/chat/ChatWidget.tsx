@@ -103,7 +103,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     const welcomeMessage: ChatMessage = {
       id: 'welcome',
       type: 'assistant',
-      content: 'Hello! I\'m your ecological AI assistant powered by Dify AI. Ask me about blooming patterns, biodiversity, climate impacts, or conservation recommendations for any location you select on the globe.',
+      content: 'Hello! I\'m your ecological AI assistant powered by Bloomee. Ask me about blooming patterns, biodiversity, climate impacts, or conservation recommendations for any location you select on the globe.',
       timestamp: new Date()
     }
     

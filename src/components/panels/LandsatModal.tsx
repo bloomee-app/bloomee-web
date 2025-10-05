@@ -4,7 +4,7 @@ import { useAppStore } from '@/lib/store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { ArrowUp, ArrowDown, X, Minimize2, Maximize2, Satellite, MapPin, Calendar, Layers, Eye, Flower2, BarChart3, Image, Leaf, GripVertical } from 'lucide-react'
+import { ArrowUp, ArrowDown, X, Minimize2, Maximize2, Satellite, MapPin, Calendar, Layers, Eye, Flower2, BarChart3, Image, Leaf, GripVertical, Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateMockLandsatData, type LandsatData } from '@/lib/mockLandsatApi'
 import { 
@@ -13,7 +13,8 @@ import {
   mapLocationToRegionWithVariety,
   getRegionName,
   getImageUrlWithFallback,
-  getVariedMockLandsatImage
+  getVariedMockLandsatImage,
+  testApiConnection
 } from '@/lib/bloomingApi'
 import { 
   generateLocationSpecificNDVI, 
@@ -54,6 +55,11 @@ export default function LandsatModal({ className }: LandsatModalProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
+  // Test API connection on component mount
+  useEffect(() => {
+    testApiConnection()
+  }, [])
+
   // Fetch Landsat data from backend API when location is selected
   useEffect(() => {
     if (selectedLocation && isLandsatModalOpen) {
@@ -65,8 +71,8 @@ export default function LandsatModal({ className }: LandsatModalProps) {
       const fetchLandsatData = async () => {
         try {
           // Map location to closest available region from backend
-          // Use variety function for demo purposes to show different regions
-          const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, true)
+          // Use accurate mapping (no forced variety for better accuracy)
+          const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, false)
           
           // Get current date in YYYY-MM-DD format
           const currentDate = new Date().toISOString().split('T')[0]
@@ -95,7 +101,7 @@ export default function LandsatModal({ className }: LandsatModalProps) {
         } catch (err) {
           console.error('❌ Unexpected error:', err)
           // Even if everything fails, provide basic fallback data
-          const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, true)
+          const region = mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, false)
           const fallbackData = createFallbackLandsatData(region, selectedLocation)
           setLandsatData(fallbackData)
         } finally {
@@ -426,9 +432,20 @@ export default function LandsatModal({ className }: LandsatModalProps) {
           </div>
           
           {selectedLocation && (
-            <CardDescription className="text-blue-200 flex items-center gap-1">
+            <CardDescription className="text-blue-200 flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
+              <span>{selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-blue-200 hover:bg-white/10 hover:text-white !cursor-pointer"
+                onClick={() => {
+                  const coords = `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
+                  navigator.clipboard.writeText(coords)
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </CardDescription>
           )}
         </CardHeader>
@@ -548,14 +565,14 @@ export default function LandsatModal({ className }: LandsatModalProps) {
                 </h3>
                 <div className="aspect-video bg-gray-800/50 rounded-lg overflow-hidden">
                   <img 
-                    src={getImageUrlWithFallback(landsatData.rgbImageUrl, selectedLocation ? mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, true) : 'japan_cherry')}
+                    src={getImageUrlWithFallback(landsatData.rgbImageUrl, selectedLocation ? mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, false) : 'japan_cherry')}
                     alt="Satellite imagery"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       // Fallback to varied mock image if API image fails to load
                       const target = e.target as HTMLImageElement
                       if (!target.src.includes('mock-landsat')) {
-                        target.src = getVariedMockLandsatImage(selectedLocation ? mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, true) : 'japan_cherry')
+                        target.src = getVariedMockLandsatImage(selectedLocation ? mapLocationToRegionWithVariety(selectedLocation.lat, selectedLocation.lng, false) : 'japan_cherry')
                       } else {
                         // If mock image also fails, show placeholder
                         target.style.display = 'none'

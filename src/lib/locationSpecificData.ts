@@ -158,6 +158,211 @@ export const LOCATION_DATA: Record<string, LocationSpecificData> = {
       vegetationDensity: 'sparse',
       waterAvailability: 'moderate'
     }
+  },
+  // Additional regions for better global coverage
+  'south_africa_protea': {
+    region: 'South Africa Protea',
+    biome: 'Fynbos',
+    climate: 'Mediterranean',
+    typicalSpecies: ['Protea', 'Erica', 'Restio', 'Leucadendron'],
+    bloomSeasons: ['winter', 'spring'],
+    ndviRange: { min: 0.4, max: 0.8 },
+    weatherPatterns: {
+      temperature: { min: 5, max: 25 },
+      precipitation: { min: 20, max: 80 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'moderate',
+      waterAvailability: 'moderate'
+    }
+  },
+  'morocco_roses': {
+    region: 'Morocco Roses',
+    biome: 'Desert Scrub',
+    climate: 'Arid',
+    typicalSpecies: ['Damask Rose', 'Cactus', 'Aloe', 'Date Palm'],
+    bloomSeasons: ['spring'],
+    ndviRange: { min: 0.2, max: 0.6 },
+    weatherPatterns: {
+      temperature: { min: 10, max: 40 },
+      precipitation: { min: 10, max: 50 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'low',
+      vegetationDensity: 'sparse',
+      waterAvailability: 'limited'
+    }
+  },
+  'kenya_wildflowers': {
+    region: 'Kenya Wildflowers',
+    biome: 'Savanna',
+    climate: 'Tropical Savanna',
+    typicalSpecies: ['Acacia', 'Baobab', 'Wildflowers', 'Grasses'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.3, max: 0.8 },
+    weatherPatterns: {
+      temperature: { min: 15, max: 35 },
+      precipitation: { min: 30, max: 150 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'moderate',
+      waterAvailability: 'moderate'
+    }
+  },
+  'australia_wildflowers': {
+    region: 'Australia Wildflowers',
+    biome: 'Arid Scrub',
+    climate: 'Arid',
+    typicalSpecies: ['Kangaroo Paw', 'Wattle', 'Eucalyptus', 'Wildflowers'],
+    bloomSeasons: ['spring', 'winter'],
+    ndviRange: { min: 0.2, max: 0.7 },
+    weatherPatterns: {
+      temperature: { min: 5, max: 45 },
+      precipitation: { min: 10, max: 80 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'moderate',
+      vegetationDensity: 'sparse',
+      waterAvailability: 'limited'
+    }
+  },
+  'brazil_flowers': {
+    region: 'Brazil Flowers',
+    biome: 'Tropical Rainforest',
+    climate: 'Tropical',
+    typicalSpecies: ['Orchids', 'Bromeliads', 'Heliconia', 'Passion Flower'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.6, max: 0.9 },
+    weatherPatterns: {
+      temperature: { min: 20, max: 35 },
+      precipitation: { min: 100, max: 300 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'dense',
+      waterAvailability: 'abundant'
+    }
+  },
+  'india_lotus': {
+    region: 'India Lotus',
+    biome: 'Wetland',
+    climate: 'Tropical Monsoon',
+    typicalSpecies: ['Lotus', 'Water Lily', 'Mango', 'Banyan'],
+    bloomSeasons: ['summer', 'monsoon'],
+    ndviRange: { min: 0.5, max: 0.9 },
+    weatherPatterns: {
+      temperature: { min: 15, max: 40 },
+      precipitation: { min: 50, max: 400 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'dense',
+      waterAvailability: 'abundant'
+    }
+  },
+  'canada_tulips': {
+    region: 'Canada Tulips',
+    biome: 'Temperate Forest',
+    climate: 'Continental',
+    typicalSpecies: ['Tulips', 'Maple', 'Pine', 'Wildflowers'],
+    bloomSeasons: ['spring'],
+    ndviRange: { min: 0.2, max: 0.8 },
+    weatherPatterns: {
+      temperature: { min: -20, max: 25 },
+      precipitation: { min: 40, max: 120 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'moderate',
+      vegetationDensity: 'moderate',
+      waterAvailability: 'abundant'
+    }
+  },
+  'chile_wildflowers': {
+    region: 'Chile Wildflowers',
+    biome: 'Mediterranean',
+    climate: 'Mediterranean',
+    typicalSpecies: ['Wildflowers', 'Cacti', 'Shrubs', 'Herbs'],
+    bloomSeasons: ['spring'],
+    ndviRange: { min: 0.2, max: 0.6 },
+    weatherPatterns: {
+      temperature: { min: 5, max: 30 },
+      precipitation: { min: 20, max: 100 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'moderate',
+      vegetationDensity: 'moderate',
+      waterAvailability: 'moderate'
+    }
+  },
+  'new_zealand_flowers': {
+    region: 'New Zealand Flowers',
+    biome: 'Temperate Forest',
+    climate: 'Oceanic',
+    typicalSpecies: ['Native Flowers', 'Ferns', 'Trees', 'Shrubs'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.4, max: 0.9 },
+    weatherPatterns: {
+      temperature: { min: 0, max: 25 },
+      precipitation: { min: 60, max: 200 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'dense',
+      waterAvailability: 'abundant'
+    }
+  },
+  'argentina_flowers': {
+    region: 'Argentina Flowers',
+    biome: 'Grassland',
+    climate: 'Temperate',
+    typicalSpecies: ['Wildflowers', 'Grasses', 'Herbs', 'Shrubs'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.3, max: 0.7 },
+    weatherPatterns: {
+      temperature: { min: 5, max: 30 },
+      precipitation: { min: 40, max: 120 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'moderate',
+      vegetationDensity: 'moderate',
+      waterAvailability: 'moderate'
+    }
+  },
+  'patagonia_wildflowers': {
+    region: 'Patagonia Wildflowers',
+    biome: 'Steppe',
+    climate: 'Cold Desert',
+    typicalSpecies: ['Patagonian Wildflowers', 'Grasses', 'Shrubs', 'Herbs'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.2, max: 0.6 },
+    weatherPatterns: {
+      temperature: { min: -10, max: 20 },
+      precipitation: { min: 20, max: 80 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'low',
+      vegetationDensity: 'sparse',
+      waterAvailability: 'limited'
+    }
+  },
+  'chile_patagonia': {
+    region: 'Chile Patagonia',
+    biome: 'Temperate Rainforest',
+    climate: 'Oceanic',
+    typicalSpecies: ['Native Flowers', 'Ferns', 'Mosses', 'Trees'],
+    bloomSeasons: ['spring', 'summer'],
+    ndviRange: { min: 0.4, max: 0.8 },
+    weatherPatterns: {
+      temperature: { min: -5, max: 15 },
+      precipitation: { min: 80, max: 200 }
+    },
+    ecologicalCharacteristics: {
+      biodiversity: 'high',
+      vegetationDensity: 'dense',
+      waterAvailability: 'abundant'
+    }
   }
 }
 
@@ -323,7 +528,10 @@ export const MOCK_LANDSAT_IMAGES = [
   '/mock-landsat.png',
   '/mock-landsat2.png',
   '/mock-landsat3.png',
-  '/mock-landsat4.png'
+  '/mock-landsat4.png',
+  '/mock-landsat5.png',
+  '/mock-landsat6.png',
+  '/mock-landsat7.png'
 ]
 
 /**
