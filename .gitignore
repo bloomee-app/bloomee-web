@@ -27,9 +27,10 @@ node_modules/
 .taskmaster/
 .env.example
 
-# Task files
-# tasks.json
-# tasks/ 
 .next/
 vertex-earth/
 docs/
+
+# Task files
+# tasks.json
+# tasks/ 

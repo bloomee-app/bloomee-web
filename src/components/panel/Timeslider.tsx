@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, Minimize2, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export default function TimeSlider() {
+interface TimeSliderProps {
+  className?: string
+}
+
+export default function TimeSlider({ className }: TimeSliderProps) {
   const [currentDate, setCurrentDate] = useState(new Date('2023-06-08'))
   const [isMinimized, setIsMinimized] = useState(false) 
   const [isLoaded, setIsLoaded] = useState(false)
@@ -53,7 +57,7 @@ export default function TimeSlider() {
 
   if (isMinimized) {
     return (
-      <div className="flex items-center gap-2 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg">
+      <div className={cn("flex items-center gap-2 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg", className)}>
         <Calendar className="h-5 w-5" />
         <span className="font-mono text-sm">
           {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -71,7 +75,7 @@ export default function TimeSlider() {
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg w-[600px] max-w-[85vw]">
+    <div className={cn("flex items-center gap-3 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white shadow-lg w-[600px] max-w-[85vw]", className)}>
       {/* Year Navigator */}
       <div className="flex items-center gap-1">
         <Button size="icon" variant="ghost" className="text-white/60 hover:text-white h-6 w-6 !cursor-pointer" onClick={() => handleYearChange(-1)}>

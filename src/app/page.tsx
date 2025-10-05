@@ -8,6 +8,7 @@ import ChatWidget from '@/components/chat/ChatWidget'
 import { useAppStore } from '@/lib/store'
 import { AboutDialog } from '@/components/modal/AboutModal'
 import TimeSlider from '@/components/panel/Timeslider'
+import LandsatModal from '@/components/panels/LandsatModal'
 
 // Temporary loading component
 function Loading() {
@@ -19,7 +20,7 @@ function Loading() {
 }
 
 export default function HomePage() {
-  const { isPanelOpen, togglePanel } = useAppStore()
+  const { isPanelOpen, togglePanel, isChatWidgetExtended, chatWidgetPosition } = useAppStore()
 
   return (
     <>
@@ -39,27 +40,46 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative h-screen min-h-screen bg-black">
-        {/* 3D Earth Canvas */}
-        <Globe className="w-full h-full" />
+      {/* Main Content - Globe Background with Overlay Panels */}
+      <main className="relative h-screen w-screen overflow-hidden bg-black">
+        {/* Globe Background - Full Screen */}
+        <Globe className="absolute inset-0 z-0" />
 
-        {/* Comparison Panel */}
-        <ComparisonPanel />
+        {/* Landsat Panel - Now draggable */}
+        <LandsatModal className="pointer-events-auto" />
+        
+        {/* Chat Widget Extended - Draggable positioning */}
+        {isChatWidgetExtended && (
+          <div 
+            className="fixed pointer-events-auto" 
+            style={{ 
+              zIndex: 9999,
+              left: `${chatWidgetPosition.x}px`,
+              top: `${chatWidgetPosition.y}px`
+            }}
+          >
+            <ChatWidget className="pointer-events-auto" />
+          </div>
+        )}
 
-        {/* Chat Widget */}
-        <ChatWidget />
+        {/* Right Side - Comparison Panel Overlay */}
+        <ComparisonPanel className="absolute top-4 right-4 bottom-4 z-30 pointer-events-auto" />
+        
+        {/* TimeSlider overlay - always at bottom */}
+        <TimeSlider 
+          className="absolute left-1/2 -translate-x-1/2 bottom-6 z-40 pointer-events-auto"
+        />
+
+        {/* Chat Widget minimized state - only show when not extended */}
+        {!isChatWidgetExtended && (
+          <ChatWidget className="fixed bottom-4 left-4 pointer-events-auto w-fit h-fit" />
+        )}
       </main>
-
-      {/* Time Slider */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-        <TimeSlider />
-      </div>
 
       {/* Footer */}
       <footer className="absolute bottom-0 right-6 z-10 p-4">
         <div className="text-white/60 text-sm">
-          <p>Powered by NASA Landsat</p>
+          <p>Powered by NASA Landsat Data</p>
         </div>
       </footer>
     </>

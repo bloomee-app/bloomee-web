@@ -69,7 +69,13 @@ function EarthGlobe() {
   const globeUVRef = useRef<THREE.Vector2>(new THREE.Vector2())
 
   // Store hook untuk update selected location
-  const { setSelectedLocation, setPanelOpen, setIsMinimized } = useAppStore()
+  const { 
+    setSelectedLocation, 
+    setPanelOpen, 
+    setIsMinimized,
+    setIsLandsatModalOpen,
+    setLandsatModalMinimized
+  } = useAppStore()
   
   // Load textures - EXACT paths from original vertex-earth
   const colorMap = useTexture('/textures/00_earthmap1k.jpg')
@@ -213,6 +219,12 @@ function EarthGlobe() {
   const handleGlobeClick = (event: any) => {
     if (!event.point) return
 
+    // Prevent click during drag/rotation
+    if (isDraggingRef.current) {
+      console.log('🖱️ Ignoring click during drag/rotation')
+      return
+    }
+
     // Convert 3D point ke lat/lng
     const { lat, lng } = pointToLatLng(event.point)
 
@@ -220,9 +232,14 @@ function EarthGlobe() {
 
     // Update store dengan koordinat yang diklik
     setSelectedLocation({ lat, lng })
+    
+    // Open both panels
     setPanelOpen(true)
     setIsMinimized(false) // CRITICAL: Ensure panel is not minimized when globe is clicked
-    console.log('🌍 Globe click: Setting panel open and not minimized for location:', { lat, lng })
+    setIsLandsatModalOpen(true) // Open Landsat Modal
+    setLandsatModalMinimized(false) // Ensure Landsat Modal is not minimized
+    
+    console.log('🌍 Globe click: Opening both panels for location:', { lat, lng })
   }
 
   // Animation loop - EXACT from original vertex-earth

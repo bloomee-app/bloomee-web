@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { 
@@ -10,7 +10,8 @@ import {
   Maximize2, 
   Bot, 
   User,
-  Loader2
+  Loader2,
+  GripVertical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
@@ -30,7 +31,11 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const widgetRef = useRef<HTMLDivElement>(null)
   
   // CRITICAL: Use global store for chat state
   // DO NOT CHANGE: This ensures chat state persists across interactions
@@ -39,7 +44,13 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setChatOpen, 
     selectedLocation, 
     bloomingData,
-    activeTab 
+    activeTab,
+    isChatWidgetExtended,
+    setChatWidgetExtended,
+    chatWidgetSize,
+    setChatWidgetSize,
+    chatWidgetPosition,
+    setChatWidgetPosition
   } = useAppStore()
 
   // Auto-scroll to bottom when new messages arrive
@@ -58,6 +69,15 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       }])
     }
   }, [isChatOpen, messages.length])
+
+  // Set default position to bottom-left when first expanded
+  useEffect(() => {
+    if (isChatWidgetExtended && chatWidgetPosition.x === 16 && chatWidgetPosition.y === 0) {
+      const defaultX = 16 // 16px from left
+      const defaultY = window.innerHeight - chatWidgetSize.height - 16 // 16px from bottom
+      setChatWidgetPosition({ x: defaultX, y: defaultY })
+    }
+  }, [isChatWidgetExtended, chatWidgetPosition, chatWidgetSize, setChatWidgetPosition])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
@@ -131,12 +151,82 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
 
   const toggleChat = () => {
     setChatOpen(!isChatOpen)
+    setChatWidgetExtended(!isChatWidgetExtended)
   }
+
+  // Resize functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !widgetRef.current) return
+
+    const rect = widgetRef.current.getBoundingClientRect()
+    const newWidth = Math.max(300, Math.min(800, e.clientX - rect.left))
+    const newHeight = Math.max(300, Math.min(600, e.clientY - rect.top))
+    
+    setChatWidgetSize({ width: newWidth, height: newHeight })
+  }, [isResizing, setChatWidgetSize])
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+    setIsDragging(false)
+  }, [])
+
+  // Drag functionality
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if (isResizing) return
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({
+      x: e.clientX - chatWidgetPosition.x,
+      y: e.clientY - chatWidgetPosition.y
+    })
+  }, [isResizing, chatWidgetPosition])
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || isResizing) return
+
+    const newX = Math.max(0, Math.min(window.innerWidth - chatWidgetSize.width, e.clientX - dragStart.x))
+    const newY = Math.max(0, Math.min(window.innerHeight - chatWidgetSize.height, e.clientY - dragStart.y))
+    
+    setChatWidgetPosition({ x: newX, y: newY })
+  }, [isDragging, isResizing, dragStart, chatWidgetSize, setChatWidgetPosition])
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'nw-resize'
+      document.body.style.userSelect = 'none'
+    } else if (isDragging) {
+      document.addEventListener('mousemove', handleDragMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'grabbing'
+      document.body.style.userSelect = 'none'
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mousemove', handleDragMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mousemove', handleDragMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing, isDragging, handleMouseMove, handleDragMove, handleMouseUp])
 
   // Don't render if chat is closed
   if (!isChatOpen) {
     return (
-      <div className={cn("fixed bottom-6 left-6 z-20", className)}>
+      <div className={cn("fixed bottom-4 left-4", className)}>
               <Button
                 onClick={toggleChat}
                 size="lg"
@@ -152,10 +242,23 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   }
 
   return (
-    <div className={cn("fixed top-6 left-6 bottom-12 z-20 w-[400px] transform transition-transform duration-300", className)}>
-      <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+    <div 
+      ref={widgetRef}
+      className={cn("transform transition-transform duration-300", className)}
+      style={{ 
+        width: `${chatWidgetSize.width}px`, 
+        height: `${chatWidgetSize.height}px`,
+        maxWidth: 'calc(50vw - 2rem)',
+        maxHeight: 'calc(100vh - 12rem)',
+        position: 'relative'
+      }}
+    >
+      <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col relative">
+        {/* Header - Draggable */}
+        <div 
+          className="flex items-center justify-between p-4 border-b border-white/10 cursor-grab active:cursor-grabbing"
+          onMouseDown={handleDragStart}
+        >
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-blue-400" />
             <h3 className="font-semibold text-white">AI Assistant</h3>
@@ -252,6 +355,14 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
               <Send className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+        
+        {/* Resize Handle */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
+          onMouseDown={handleMouseDown}
+        >
+          <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
         </div>
       </Card>
     </div>

@@ -51,6 +51,11 @@ interface AppState {
   isMinimized: boolean
   activeTab: string
 
+  // Landsat Modal state
+  isLandsatModalOpen: boolean
+  landsatModalMinimized: boolean
+  landsatModalPosition: { x: number; y: number }
+
   // Camera state
   cameraPosition: [number, number, number]
 
@@ -65,7 +70,14 @@ interface AppState {
 
   // Chat interface state
   isChatOpen: boolean
+  isChatWidgetExtended: boolean
   chatMessages: ChatMessage[]
+  chatWidgetSize: { width: number; height: number }
+  chatWidgetPosition: { x: number; y: number }
+
+  // Panel resize state
+  panelSize: { width: number; height: number }
+  panelPosition: { x: number; y: number }
 
   // Temporal analysis state
   selectedTimeRange: DateRange
@@ -83,11 +95,22 @@ interface AppState {
   setPanelOpen: (open: boolean) => void
   setIsMinimized: (minimized: boolean) => void
   setActiveTab: (tab: string) => void
+  
+  // Landsat Modal actions
+  setIsLandsatModalOpen: (open: boolean) => void
+  setLandsatModalMinimized: (minimized: boolean) => void
+  setLandsatModalPosition: (position: { x: number; y: number }) => void
+  
   setCameraPosition: (position: [number, number, number]) => void
   setSelectedLocation: (location: { lat: number; lng: number } | null) => void
   setBloomingData: (data: BloomingApiResponse['data'] | null) => void
   setScaleMode: (mode: 'global' | 'regional' | 'local') => void
   setChatOpen: (open: boolean) => void
+  setChatWidgetExtended: (extended: boolean) => void
+  setChatWidgetSize: (size: { width: number; height: number }) => void
+  setChatWidgetPosition: (position: { x: number; y: number }) => void
+  setPanelSize: (size: { width: number; height: number }) => void
+  setPanelPosition: (position: { x: number; y: number }) => void
   addChatMessage: (message: ChatMessage) => void
   setSelectedTimeRange: (range: DateRange) => void
   setSelectedSeason: (season: Season | null) => void
@@ -103,12 +126,23 @@ export const useAppStore = create<AppState>((set) => ({
   isPanelOpen: false,
   isMinimized: false,
   activeTab: 'overview',
+  
+  // Landsat Modal initial state
+  isLandsatModalOpen: false,
+  landsatModalMinimized: false,
+  landsatModalPosition: { x: 16, y: 90 }, // Initial position matching current layout
+  
   cameraPosition: [0, 0, 3.5],
   selectedLocation: null,
   bloomingData: null,
   scaleMode: 'global',
   isChatOpen: false,
+  isChatWidgetExtended: false,
   chatMessages: [],
+  chatWidgetSize: { width: 400, height: 350 },
+  chatWidgetPosition: { x: 16, y: 0 }, // Will be calculated to bottom-right on first expand
+  panelSize: { width: 500, height: 600 },
+  panelPosition: { x: 0, y: 0 }, // Will be calculated to right position
   selectedTimeRange: { start: new Date('2023-01-01'), end: new Date('2024-12-31') },
   selectedSeason: 'all',
   trendMode: 'intensity',
@@ -130,6 +164,16 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveTab: (tab) =>
     set({ activeTab: tab }),
 
+  // Landsat Modal actions
+  setIsLandsatModalOpen: (open) =>
+    set({ isLandsatModalOpen: open }),
+
+  setLandsatModalMinimized: (minimized) =>
+    set({ landsatModalMinimized: minimized }),
+
+  setLandsatModalPosition: (position) =>
+    set({ landsatModalPosition: position }),
+
   setCameraPosition: (position) =>
     set({ cameraPosition: position }),
 
@@ -144,6 +188,21 @@ export const useAppStore = create<AppState>((set) => ({
 
   setChatOpen: (open) =>
     set({ isChatOpen: open }),
+
+  setChatWidgetExtended: (extended) =>
+    set({ isChatWidgetExtended: extended }),
+
+  setChatWidgetSize: (size) =>
+    set({ chatWidgetSize: size }),
+
+  setChatWidgetPosition: (position) =>
+    set({ chatWidgetPosition: position }),
+
+  setPanelSize: (size) =>
+    set({ panelSize: size }),
+
+  setPanelPosition: (position) =>
+    set({ panelPosition: position }),
 
   addChatMessage: (message) =>
     set((state) => ({ chatMessages: [...state.chatMessages, message] })),
