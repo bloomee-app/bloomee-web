@@ -32,6 +32,8 @@ export default function LandsatModal({ className }: LandsatModalProps) {
   const [size, setSize] = useState({ width: 500, height: 400 })
   const [isResizing, setIsResizing] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false)
@@ -62,13 +64,19 @@ export default function LandsatModal({ className }: LandsatModalProps) {
 
   // Handle minimize/maximize
   const handleMinimize = () => {
+    if (isAnimating) return
     console.log('🔽 Minimizing Landsat Modal')
+    setIsAnimating(true)
     setLandsatModalMinimized(true)
+    setTimeout(() => setIsAnimating(false), 500)
   }
 
   const handleMaximize = () => {
+    if (isAnimating) return
     console.log('🔼 Maximizing Landsat Modal')
+    setIsAnimating(true)
     setLandsatModalMinimized(false)
+    setTimeout(() => setIsAnimating(false), 500)
   }
 
   // Resize functionality (same as ChatWidget)
@@ -179,45 +187,51 @@ export default function LandsatModal({ className }: LandsatModalProps) {
     willShowFull: isLandsatModalOpen && !landsatModalMinimized
   })
 
-  // CRITICAL: Minimized view - shows floating button when modal is minimized
-  // This allows users to restore modal after minimizing
-  if (landsatModalMinimized) {
-    console.log('🔽 Rendering MINIMIZED LandsatModal view')
-    return (
-      <div 
-        className={cn("fixed z-10 transform transition-transform duration-300", className)}
-        style={{
-          left: `${landsatModalPosition.x}px`,
-          top: `${landsatModalPosition.y}px`
-        }}
-      >
-        <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
-            onClick={handleMaximize}
-          >
-            <Maximize2 className="h-5 w-5" />
-          </Button>
-        </Card>
-      </div>
-    )
-  }
+  if (!isLandsatModalOpen) return null
 
-  console.log('🔍 Rendering FULL LandsatModal view')
+  console.log('🔍 Rendering LandsatModal view')
   return (
     <div 
+      ref={containerRef}
       className={cn(
-        "fixed z-10 transform transition-transform duration-300",
+        "fixed z-10 rounded-lg overflow-hidden transition-all duration-500 ease-in-out",
         isLandsatModalOpen ? "translate-x-0" : "-translate-x-full",
         className
       )}
       style={{
+        width: landsatModalMinimized ? '48px' : `${size.width}px`,
+        height: landsatModalMinimized ? '48px' : `${size.height}px`,
         left: `${landsatModalPosition.x}px`,
         top: `${landsatModalPosition.y}px`
       }}
     >
+      <div ref={panelRef} className="w-full h-full relative">
+        {/* Minimized Icon */}
+        <div 
+          className={cn(
+            "absolute inset-0 flex items-center justify-center transition-opacity duration-300",
+            landsatModalMinimized ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          )}
+        >
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 w-full h-full flex items-center justify-center">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer h-8 w-8"
+              onClick={handleMaximize}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </Card>
+        </div>
+
+        {/* Full Content */}
+        <div 
+          className={cn(
+            "absolute inset-0 transition-opacity duration-300",
+            !landsatModalMinimized ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          )}
+        >
       <Card 
         ref={panelRef}
         className="bg-white/10 backdrop-blur-md border-white/20 flex flex-col relative"
@@ -383,6 +397,7 @@ export default function LandsatModal({ className }: LandsatModalProps) {
               {/* Placeholder for future visualizations */}
               <div className="bg-white/5 rounded-lg p-4">
                 <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <Image className="h-4 w-4 text-purple-400" />
                   Satellite Imagery
                 </h3>
@@ -454,6 +469,8 @@ export default function LandsatModal({ className }: LandsatModalProps) {
           <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
         </div>
       </Card>
+        </div>
+      </div>
     </div>
   )
 }

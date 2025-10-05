@@ -119,10 +119,31 @@ interface AppState {
   setTrendData: (data: TrendDataPoint[]) => void
   setEcologicalInsights: (insights: EcologicalInsight[]) => void
   setConservationInsights: (insights: ConservationInsight[]) => void
+  restoreChatState: () => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  // Initial state
+// Helper functions for localStorage persistence
+const getStoredChatState = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem('bloome-chat-state')
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+const setStoredChatState = (state: { isChatOpen: boolean; isChatWidgetExtended: boolean; chatWidgetPosition: { x: number; y: number } }) => {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem('bloome-chat-state', JSON.stringify(state))
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  // Initial state - always start with default values to avoid hydration mismatch
   isPanelOpen: false,
   isMinimized: false,
   activeTab: 'overview',
@@ -140,7 +161,7 @@ export const useAppStore = create<AppState>((set) => ({
   isChatWidgetExtended: false,
   chatMessages: [],
   chatWidgetSize: { width: 400, height: 350 },
-  chatWidgetPosition: { x: 16, y: 0 }, // Will be calculated to bottom-right on first expand
+  chatWidgetPosition: { x: 16, y: 0 },
   panelSize: { width: 500, height: 750 },
   panelPosition: { x: 0, y: 0 }, // Will be calculated to right position
   selectedTimeRange: { start: new Date('2023-01-01'), end: new Date('2024-12-31') },
@@ -187,16 +208,43 @@ export const useAppStore = create<AppState>((set) => ({
     set({ scaleMode: mode }),
 
   setChatOpen: (open) =>
-    set({ isChatOpen: open }),
+    set((state) => {
+      const newState = { ...state, isChatOpen: open }
+      // Persist chat state
+      setStoredChatState({
+        isChatOpen: newState.isChatOpen,
+        isChatWidgetExtended: newState.isChatWidgetExtended,
+        chatWidgetPosition: newState.chatWidgetPosition
+      })
+      return newState
+    }),
 
   setChatWidgetExtended: (extended) =>
-    set({ isChatWidgetExtended: extended }),
+    set((state) => {
+      const newState = { ...state, isChatWidgetExtended: extended }
+      // Persist chat state
+      setStoredChatState({
+        isChatOpen: newState.isChatOpen,
+        isChatWidgetExtended: newState.isChatWidgetExtended,
+        chatWidgetPosition: newState.chatWidgetPosition
+      })
+      return newState
+    }),
 
   setChatWidgetSize: (size) =>
     set({ chatWidgetSize: size }),
 
   setChatWidgetPosition: (position) =>
-    set({ chatWidgetPosition: position }),
+    set((state) => {
+      const newState = { ...state, chatWidgetPosition: position }
+      // Persist chat state
+      setStoredChatState({
+        isChatOpen: newState.isChatOpen,
+        isChatWidgetExtended: newState.isChatWidgetExtended,
+        chatWidgetPosition: newState.chatWidgetPosition
+      })
+      return newState
+    }),
 
   setPanelSize: (size) =>
     set({ panelSize: size }),
@@ -227,4 +275,15 @@ export const useAppStore = create<AppState>((set) => ({
 
   setConservationInsights: (insights) =>
     set({ conservationInsights: insights }),
+
+  restoreChatState: () => {
+    const storedState = getStoredChatState()
+    if (storedState) {
+      set({
+        isChatOpen: storedState.isChatOpen,
+        isChatWidgetExtended: storedState.isChatWidgetExtended,
+        chatWidgetPosition: storedState.chatWidgetPosition
+      })
+    }
+  },
 }))

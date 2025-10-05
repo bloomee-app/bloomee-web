@@ -38,19 +38,25 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const panelRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
 
   const [panelState, setPanelState] = useState<PanelState>('default')
   
   const dragStartRef = useRef<{ y: number } | null>(null)
 
   const handleMaximize = () => {
+    if (isAnimating) return
+    setIsAnimating(true)
     setIsMinimized(false)
-    setPanelState('default')
+    setTimeout(() => setIsAnimating(false), 500)
   }
 
-  // Fungsi untuk minimize panel
   const handleMinimize = () => {
-    setIsMinimized(true);
+    if (isAnimating) return
+    setIsAnimating(true)
+    setIsMinimized(true)
+    setTimeout(() => setIsAnimating(false), 500)
   }
 
   const handleMobileDragStart = (e: React.TouchEvent | React.MouseEvent) => {
@@ -220,7 +226,7 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     fetchBloomingData()
   }, [selectedLocation, isPanelOpen, setGlobalBloomingData])
 
-  if (!selectedLocation) return null
+  if (!selectedLocation || !isPanelOpen) return null
 
   const getTrendIcon = (trend: string) => {
     if (trend.includes('+')) return <ArrowUp className="text-green-400 h-4 w-4" />
@@ -228,125 +234,119 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     return null
   }
 
-  if (isMinimized && isPanelOpen) {
-    return (
-      <>
-        {/* Minimize mobile */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 p-2 md:hidden">
-          <Card 
-            className="bg-white/10 backdrop-blur-md border-white/20 flex items-center justify-between p-2 cursor-pointer"
-            onClick={handleMaximize}
-          >
-            <div className="text-white text-sm font-semibold ml-2">
-              {bloomingData?.location.name || 'Blooming Analysis'}
-            </div>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="text-white/70 hover:bg-white/10 hover:text-white"
-            >
-              <Maximize2 className="h-5 w-5" />
-            </Button>
-          </Card>
-        </div>
-        {/* Minimize desktop */}
-        <div className={cn("fixed top-6 right-6 z-10 transform transition-transform duration-300 hidden md:block", className)}>
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
-            <Button 
-                size="icon" 
-                variant="ghost" 
-                className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
-                onClick={handleMaximize}
-            >
-                <Maximize2 className="h-5 w-5" />
-            </Button>
-            </Card>
-        </div>
-      </>
-    )
-  }
+  if (!isPanelOpen) return null
 
   return (
     <div 
-      ref={panelRef}
+      ref={containerRef}
       className={cn(
-        "fixed z-10 transform transition-transform duration-300",
+        "fixed z-10 rounded-lg overflow-hidden transition-all duration-500 ease-in-out",
         // Mobile responsive styles
-        "bottom-0 left-0 right-0 w-full rounded-t-2xl",
+        "bottom-0 left-0 right-0 w-full rounded-t-2xl md:rounded-lg",
         panelState === 'default' ? 'h-[85vh]' : 'h-full',
-        // Desktop styles with your custom positioning
-        "md:top-auto md:right-auto md:bottom-auto md:left-auto md:w-auto md:h-auto md:rounded-lg",
-        isPanelOpen ? "translate-y-0 md:translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full",
+        // Desktop styles with custom positioning
+        "md:top-auto md:right-auto md:bottom-auto md:left-auto md:w-auto md:h-auto",
+        // Hide panel completely when closed instead of sliding
+        isPanelOpen ? "translate-y-0 md:translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full opacity-0 pointer-events-none",
         className
       )}
       style={{ 
         // Apply custom positioning only on desktop
         ...(window.innerWidth >= 768 && {
-          width: `${panelSize.width}px`,
-          height: `${panelSize.height}px`,
-          left: `${panelPosition.x}px`,
-          top: `${panelPosition.y}px`
+          width: isMinimized ? '48px' : `${panelSize.width}px`,
+          height: isMinimized ? '48px' : `${panelSize.height}px`,
+          left: isMinimized ? `${window.innerWidth - 72}px` : `${panelPosition.x}px`,
+          top: isMinimized ? '24px' : `${panelPosition.y}px`
         })
       }}
     >
-      <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col relative">
-        {/* Mobile drag handle */}
+      <div ref={panelRef} className="w-full h-full relative">
+        {/* Minimized Icon */}
         <div 
-          className="md:hidden flex-shrink-0 flex justify-center py-3 cursor-grab active:cursor-grabbing"
-          onTouchStart={handleMobileDragStart}
-          onTouchEnd={handleDragEnd}
-          onMouseDown={handleMobileDragStart}
-          onMouseUp={handleDragEnd}
+          className={cn(
+            "absolute inset-0 flex items-center justify-center transition-opacity duration-300",
+            isMinimized ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          )}
         >
-          <div className="w-16 h-1.5 bg-white/30 rounded-full" />
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 w-full h-full flex items-center justify-center">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer h-8 w-8"
+              onClick={handleMaximize}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </Card>
         </div>
 
-        <CardHeader 
-          className="cursor-grab active:cursor-grabbing pt-0 md:pt-6"
-          onMouseDown={handleDesktopDragStart}
+        {/* Full Content */}
+        <div 
+          className={cn(
+            "absolute inset-0 transition-opacity duration-300",
+            !isMinimized ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          )}
         >
-          <div className="absolute top-3 right-3 flex gap-1">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer hidden md:flex"
-              onClick={handleMinimize}
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
-              onClick={() => setPanelOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <CardTitle className="text-white">
-            {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
-          </CardTitle>
-          <CardDescription className="text-blue-200">
-            {selectedLocation
-              ? `${selectedLocation.lat.toFixed(4)}°, ${selectedLocation.lng.toFixed(4)}°`
-              : 'Select a location on the globe'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
-          {loading && <div className="text-white/80 text-sm text-center py-4">Loading...</div>}
-          {error && <div className="text-red-400 text-sm p-3 bg-red-400/10 rounded">{error}</div>}
-          {bloomingData && !loading && !error && <TabContent bloomingData={bloomingData} getTrendIcon={getTrendIcon} />}
-        </CardContent>
-        
-        {/* Resize Handle - Bottom Right */}
-        <div
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
-          onMouseDown={handleMouseDown}
-        >
-          <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
+              <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col relative">
+                {/* Mobile drag handle */}
+                <div 
+                  className="md:hidden flex-shrink-0 flex justify-center py-3 cursor-grab active:cursor-grabbing"
+                  onTouchStart={handleMobileDragStart}
+                  onTouchEnd={handleDragEnd}
+                  onMouseDown={handleMobileDragStart}
+                  onMouseUp={handleDragEnd}
+                >
+                  <div className="w-16 h-1.5 bg-white/30 rounded-full" />
+                </div>
+
+                <CardHeader 
+                  className="cursor-grab active:cursor-grabbing pt-0 md:pt-6"
+                  onMouseDown={handleDesktopDragStart}
+                >
+                  <div className="absolute top-3 right-3 flex gap-1">
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer hidden md:flex"
+                      onClick={handleMinimize}
+                    >
+                      <Minimize2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+                      onClick={() => setPanelOpen(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CardTitle className="text-white">
+                    {bloomingData ? bloomingData.location.name : 'Blooming Analysis'}
+                  </CardTitle>
+                  <CardDescription className="text-blue-200">
+                    {selectedLocation
+                      ? `${selectedLocation.lat.toFixed(4)}°, ${selectedLocation.lng.toFixed(4)}°`
+                      : 'Select a location on the globe'
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-hidden">
+                  {loading && <div className="text-white/80 text-sm text-center py-4">Loading...</div>}
+                  {error && <div className="text-red-400 text-sm p-3 bg-red-400/10 rounded">{error}</div>}
+                  {bloomingData && !loading && !error && <TabContent bloomingData={bloomingData} getTrendIcon={getTrendIcon} />}
+                </CardContent>
+                
+                {/* Resize Handle - Bottom Right */}
+                <div
+                  className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
+                  onMouseDown={handleMouseDown}
+                >
+                  <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
+                </div>
+              </Card>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

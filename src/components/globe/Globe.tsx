@@ -184,7 +184,7 @@ function EarthGlobe() {
     vertexShader,
     fragmentShader,
     transparent: true
-  }), [uniforms])
+  }), [uniforms, vertexShader, fragmentShader])
 
   // Raycasting function for mouse interaction and cursor effects
   const handleRaycast = (camera: THREE.Camera) => {

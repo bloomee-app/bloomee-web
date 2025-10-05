@@ -13,8 +13,10 @@ import {
   Loader2,
   GripVertical
 } from 'lucide-react'
+import { FaClockRotateLeft } from "react-icons/fa6"
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
+import anime from 'animejs'
 
 interface ChatMessage {
   id: string
@@ -36,6 +38,9 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<HTMLDivElement>(null)
+  const minimizedRef = useRef<HTMLDivElement>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   
   // CRITICAL: Use global store for chat state
   // DO NOT CHANGE: This ensures chat state persists across interactions
@@ -50,8 +55,14 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     chatWidgetSize,
     setChatWidgetSize,
     chatWidgetPosition,
-    setChatWidgetPosition
+    setChatWidgetPosition,
+    restoreChatState
   } = useAppStore()
+
+  // Restore chat state from localStorage after hydration
+  useEffect(() => {
+    restoreChatState()
+  }, [restoreChatState])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -70,14 +81,14 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
   }, [isChatOpen, messages.length])
 
-  // Set default position to bottom-left when first expanded
+  // Set proper position if restored from localStorage and position is still default
   useEffect(() => {
-    if (isChatWidgetExtended && chatWidgetPosition.x === 16 && chatWidgetPosition.y === 0) {
-      const defaultX = 16 // 16px from left
-      const defaultY = window.innerHeight - chatWidgetSize.height - 16 // 16px from bottom
-      setChatWidgetPosition({ x: defaultX, y: defaultY })
+    if (isChatWidgetExtended && chatWidgetPosition.y === 0) {
+      const properY = window.innerHeight - chatWidgetSize.height - 16
+      setChatWidgetPosition({ x: 16, y: properY })
     }
   }, [isChatWidgetExtended, chatWidgetPosition, chatWidgetSize, setChatWidgetPosition])
+
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
@@ -108,6 +119,141 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       setIsLoading(false)
     }, 1000 + Math.random() * 2000) // 1-3 second delay
   }
+
+  // UTIL: Create a temporary overlay element for morph animation
+  const createOverlay = (rect: { left: number; top: number; width: number; height: number }, borderRadiusPx: number) => {
+    const overlay = document.createElement('div')
+    overlay.style.position = 'fixed'
+    overlay.style.left = `${rect.left}px`
+    overlay.style.top = `${rect.top}px`
+    overlay.style.width = `${rect.width}px`
+    overlay.style.height = `${rect.height}px`
+    overlay.style.zIndex = '10000'
+    overlay.style.background = 'rgba(255,255,255,0.05)'
+    overlay.style.border = '1px solid rgba(255,255,255,0.1)'
+    overlay.style.borderRadius = `${borderRadiusPx}px`
+    overlay.style.boxShadow = '0 10px 30px rgba(0,0,0,0.35)'
+    // mimic blur feel subtly
+    overlay.style.backdropFilter = 'blur(6px)'
+    overlay.style.setProperty('-webkit-backdrop-filter', 'blur(6px)')
+    document.body.appendChild(overlay)
+    return overlay
+  }
+
+  // OPEN: Animate from minimized icon to full panel
+  const openWithAnimation = useCallback(() => {
+    if (isAnimating) return
+    const iconEl = minimizedRef.current
+    if (!iconEl) {
+      setChatOpen(true)
+      setChatWidgetExtended(true)
+      return
+    }
+
+    const iconRect = iconEl.getBoundingClientRect()
+    
+    // Calculate proper target position (bottom-left by default)
+    let targetX = chatWidgetPosition.x
+    let targetY = chatWidgetPosition.y
+    
+    // If position is still default (y: 0), calculate proper bottom-left position
+    if (targetY === 0) {
+      targetX = 16 // 16px from left
+      targetY = window.innerHeight - chatWidgetSize.height - 16 // 16px from bottom
+    }
+    
+    const targetRect = {
+      left: targetX,
+      top: targetY,
+      width: chatWidgetSize.width,
+      height: chatWidgetSize.height
+    }
+
+    const overlay = createOverlay(
+      { left: iconRect.left, top: iconRect.top, width: iconRect.width, height: iconRect.height },
+      24
+    )
+
+    setIsAnimating(true)
+    // Hide the real icon during animation to avoid double visuals
+    const prevVisibility = iconEl.style.visibility
+    iconEl.style.visibility = 'hidden'
+
+    anime({
+      targets: overlay,
+      left: targetRect.left,
+      top: targetRect.top,
+      width: targetRect.width,
+      height: targetRect.height,
+      borderRadius: [
+        '32px 32px 32px 4px', // From: icon style (rounded top, sharp bottom-left)
+        '12px 12px 12px 12px'  // To: panel style (all rounded)
+      ],
+      easing: 'easeInOutQuad',
+      duration: 450,
+      complete: () => {
+        // Update store with calculated position
+        setChatWidgetPosition({ x: targetX, y: targetY })
+        setChatOpen(true)
+        setChatWidgetExtended(true)
+        setIsAnimating(false)
+        // cleanup
+        overlay.remove()
+        iconEl.style.visibility = prevVisibility
+      }
+    })
+  }, [isAnimating, chatWidgetPosition, chatWidgetSize, setChatOpen, setChatWidgetExtended, setChatWidgetPosition])
+
+  // CLOSE: Animate from full panel to minimized icon
+  const closeWithAnimation = useCallback(() => {
+    if (isAnimating) return
+    const panelEl = widgetRef.current
+    // Compute target icon rect (bottom-left button, 16px insets, 48px size)
+    const target = {
+      width: 48,
+      height: 48,
+      left: 16,
+      top: Math.max(0, window.innerHeight - 16 - 48)
+    }
+
+    if (!panelEl) {
+      setChatOpen(false)
+      setChatWidgetExtended(false)
+      return
+    }
+
+    const panelRect = panelEl.getBoundingClientRect()
+    const overlay = createOverlay(
+      { left: panelRect.left, top: panelRect.top, width: panelRect.width, height: panelRect.height },
+      12 // Panel starts with 12px border radius
+    )
+
+    setIsAnimating(true)
+    // Hide real panel during animation
+    const prevVisibility = panelEl.style.visibility
+    panelEl.style.visibility = 'hidden'
+
+    anime({
+      targets: overlay,
+      left: target.left,
+      top: target.top,
+      width: target.width,
+      height: target.height,
+      borderRadius: [
+        '12px 12px 12px 12px',  // From: panel style (all rounded)
+        '32px 32px 32px 4px'    // To: icon style (rounded top, sharp bottom-left)
+      ],
+      easing: 'easeInOutQuad',
+      duration: 450,
+      complete: () => {
+        setChatOpen(false)
+        setChatWidgetExtended(false)
+        setIsAnimating(false)
+        overlay.remove()
+        panelEl.style.visibility = prevVisibility
+      }
+    })
+  }, [isAnimating, setChatOpen, setChatWidgetExtended])
 
   const generateMockResponse = async (userInput: string): Promise<string> => {
     // Get current context
@@ -150,8 +296,11 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   }
 
   const toggleChat = () => {
-    setChatOpen(!isChatOpen)
-    setChatWidgetExtended(!isChatWidgetExtended)
+    if (isChatOpen) {
+      closeWithAnimation()
+    } else {
+      openWithAnimation()
+    }
   }
 
   // Resize functionality
@@ -226,9 +375,9 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   // Don't render if chat is closed
   if (!isChatOpen) {
     return (
-      <div className={cn("fixed bottom-4 left-4", className)}>
+      <div ref={minimizedRef} className={cn("fixed bottom-4 left-4", className)}>
               <Button
-                onClick={toggleChat}
+                onClick={openWithAnimation}
                 size="lg"
                 className="h-12 w-12 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-lg !cursor-pointer"
                 style={{
@@ -263,15 +412,47 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
             <Bot className="h-5 w-5 text-blue-400" />
             <h3 className="font-semibold text-white">AI Assistant</h3>
           </div>
-          <Button
-            onClick={toggleChat}
-            size="sm"
-            variant="ghost"
-            className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
-          >
-            <Minimize2 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowHistory(!showHistory)}
+              size="sm"
+              variant="ghost"
+              className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
+              title="Chat History"
+            >
+              <FaClockRotateLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={closeWithAnimation}
+              size="sm"
+              variant="ghost"
+              className="text-white/60 hover:text-white hover:bg-white/10 !cursor-pointer"
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Chat History Panel */}
+        {showHistory && (
+          <div className="border-b border-white/10 p-4 bg-white/5">
+            <h4 className="text-sm font-medium text-white mb-3">Chat History</h4>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                <div className="font-medium">Session 1 - Today 14:30</div>
+                <div className="text-white/50">Discussed blooming patterns in Amazon rainforest...</div>
+              </div>
+              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                <div className="font-medium">Session 2 - Today 12:15</div>
+                <div className="text-white/50">Asked about biodiversity conservation strategies...</div>
+              </div>
+              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                <div className="font-medium">Session 3 - Yesterday 16:45</div>
+                <div className="text-white/50">Explored climate impact on flowering seasons...</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

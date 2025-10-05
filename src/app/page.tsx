@@ -9,6 +9,7 @@ import { useAppStore } from '@/lib/store'
 import { AboutDialog } from '@/components/modal/AboutModal'
 import TimeSlider from '@/components/panel/Timeslider'
 import LandsatModal from '@/components/panels/LandsatModal'
+import Image from 'next/image'
 
 // Temporary loading component
 function Loading() {
@@ -29,9 +30,11 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
                  <div className="text-white">
                    <div className="flex items-center gap-3">
-                     <img 
+                     <Image 
                        src="/logo/logo-text.png" 
                        alt="Bloome" 
+                       width={120}
+                       height={40}
                        className="h-10 w-auto -ml-1.5"
                      />
                    </div>
@@ -67,7 +70,7 @@ export default function HomePage() {
         
         {/* TimeSlider overlay - always at bottom */}
         <TimeSlider 
-          className="absolute left-1/2 -translate-x-1/2 bottom-6 z-40 pointer-events-auto"
+          className="absolute bottom-6 z-40 pointer-events-auto"
         />
 
         {/* Chat Widget minimized state - only show when not extended */}
