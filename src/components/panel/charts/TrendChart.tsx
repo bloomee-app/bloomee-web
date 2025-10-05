@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar, TrendingUp, BarChart3, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
@@ -184,97 +185,76 @@ export default function TrendChart({ className }: TrendChartProps) {
   }
   
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* Chart Controls */}
-      <div className="flex flex-wrap gap-2">
-        {/* Chart Mode */}
-        <div className="flex gap-1 bg-white/10 rounded-lg p-1">
-          <Button
-            size="sm"
-            variant={trendMode === 'intensity' ? 'default' : 'ghost'}
-            onClick={() => setTrendMode('intensity')}
-            className="text-xs"
-          >
-            <TrendingUp className="h-3 w-3 mr-1" />
-            Intensity
-          </Button>
-          <Button
-            size="sm"
-            variant={trendMode === 'species' ? 'default' : 'ghost'}
-            onClick={() => setTrendMode('species')}
-            className="text-xs"
-          >
-            <BarChart3 className="h-3 w-3 mr-1" />
-            Species
-          </Button>
-          <Button
-            size="sm"
-            variant={trendMode === 'climate' ? 'default' : 'ghost'}
-            onClick={() => setTrendMode('climate')}
-            className="text-xs"
-          >
-            <Calendar className="h-3 w-3 mr-1" />
-            Climate
-          </Button>
+    <div className={cn("space-y-3", className)}>
+      {/* Chart Controls - Compact Select Layout */}
+      <div className="space-y-2">
+        {/* Row 1: Chart Mode and View Mode + Season Filter */}
+        <div className="flex gap-2 ml-2">
+          {/* Chart Mode Select */}
+          <Select value={trendMode} onValueChange={(value) => setTrendMode(value as any)}>
+            <SelectTrigger className="w-[120px] h-8 bg-white/10 border-white/20 text-white text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-white/20">
+              <SelectItem value="intensity" className="text-white focus:bg-blue-600">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3 w-3" />
+                  Intensity
+                </div>
+              </SelectItem>
+              <SelectItem value="species" className="text-white focus:bg-blue-600">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-3 w-3" />
+                  Species
+                </div>
+              </SelectItem>
+              <SelectItem value="climate" className="text-white focus:bg-blue-600">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-3 w-3" />
+                  Climate
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* View Mode Select */}
+          <Select value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
+            <SelectTrigger className="w-[100px] h-8 bg-white/10 border-white/20 text-white text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-white/20">
+              <SelectItem value="monthly" className="text-white focus:bg-blue-600">Monthly</SelectItem>
+              <SelectItem value="yearly" className="text-white focus:bg-blue-600">Yearly</SelectItem>
+              <SelectItem value="seasonal" className="text-white focus:bg-blue-600">Seasonal</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Season Filter (only for seasonal view) */}
+          {viewMode === 'seasonal' && (
+            <Select value={selectedSeason} onValueChange={(value) => setSelectedSeason(value as any)}>
+              <SelectTrigger className="w-[100px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-white/20">
+                <SelectItem value="all" className="text-white focus:bg-blue-600">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-3 w-3" />
+                    All
+                  </div>
+                </SelectItem>
+                {(['spring', 'summer', 'fall', 'winter'] as const).map(season => (
+                  <SelectItem key={season} value={season} className="text-white focus:bg-blue-600 capitalize">
+                    {season}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        
-        {/* View Mode */}
-        <div className="flex gap-1 bg-white/10 rounded-lg p-1">
-          <Button
-            size="sm"
-            variant={viewMode === 'monthly' ? 'default' : 'ghost'}
-            onClick={() => setViewMode('monthly')}
-            className="text-xs"
-          >
-            Monthly
-          </Button>
-          <Button
-            size="sm"
-            variant={viewMode === 'yearly' ? 'default' : 'ghost'}
-            onClick={() => setViewMode('yearly')}
-            className="text-xs"
-          >
-            Yearly
-          </Button>
-          <Button
-            size="sm"
-            variant={viewMode === 'seasonal' ? 'default' : 'ghost'}
-            onClick={() => setViewMode('seasonal')}
-            className="text-xs"
-          >
-            Seasonal
-          </Button>
-        </div>
-        
-        {/* Season Filter (only for seasonal view) */}
-        {viewMode === 'seasonal' && (
-          <div className="flex gap-1 bg-white/10 rounded-lg p-1">
-            <Button
-              size="sm"
-              variant={selectedSeason === 'all' ? 'default' : 'ghost'}
-              onClick={() => setSelectedSeason('all')}
-              className="text-xs"
-            >
-              <Filter className="h-3 w-3 mr-1" />
-              All
-            </Button>
-            {(['spring', 'summer', 'fall', 'winter'] as const).map(season => (
-              <Button
-                key={season}
-                size="sm"
-                variant={selectedSeason === season ? 'default' : 'ghost'}
-                onClick={() => setSelectedSeason(season)}
-                className="text-xs capitalize"
-              >
-                {season}
-              </Button>
-            ))}
-          </div>
-        )}
       </div>
       
       {/* Chart */}
-      <div className="h-80 w-full">
+      <div className="h-80 w-full -ml-7">
         <ResponsiveContainer width="100%" height="100%">
           {trendMode === 'climate' ? (
             <AreaChart data={chartData}>
