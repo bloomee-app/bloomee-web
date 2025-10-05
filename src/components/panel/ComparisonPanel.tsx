@@ -13,6 +13,8 @@ interface ComparisonPanelProps {
   className?: string
 }
 
+type PanelState = 'default' | 'fullscreen'
+
 export default function ComparisonPanel({ className }: ComparisonPanelProps) {
   // CRITICAL: These store values are essential for auto-open behavior
   // DO NOT REMOVE: selectedLocation triggers panel auto-open when globe is clicked
@@ -37,14 +39,52 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Fungsi untuk maximize panel
+  const [panelState, setPanelState] = useState<PanelState>('default')
+  
+  const dragStartRef = useRef<{ y: number } | null>(null)
+
   const handleMaximize = () => {
     setIsMinimized(false)
+    setPanelState('default')
   }
 
   // Fungsi untuk minimize panel
   const handleMinimize = () => {
-    setIsMinimized(true)
+    setIsMinimized(true);
+  }
+
+  const handleMobileDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+    dragStartRef.current = { y }
+    if (panelRef.current) {
+      panelRef.current.style.transition = 'none'
+    }
+  }
+
+  const handleDragEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!dragStartRef.current) return
+
+    const yEnd = 'changedTouches' in e ? e.changedTouches[0].clientY : e.clientY
+    const deltaY = yEnd - dragStartRef.current.y
+    const dragThreshold = 50
+
+    if (panelRef.current) {
+      panelRef.current.style.transition = 'height 0.3s ease-in-out'
+    }
+
+    if (panelState === 'default') {
+      if (deltaY < -dragThreshold) {
+        setPanelState('fullscreen')
+      } else if (deltaY > dragThreshold) {
+        setIsMinimized(true)
+      }
+    } else if (panelState === 'fullscreen') {
+      if (deltaY > dragThreshold) {
+        setPanelState('default')
+      }
+    }
+
+    dragStartRef.current = null
   }
 
   // Resize functionality
@@ -87,8 +127,8 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     setIsDragging(false)
   }, [])
 
-  // Drag functionality
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
+  // Drag functionality for desktop
+  const handleDesktopDragStart = useCallback((e: React.MouseEvent) => {
     if (isResizing) return
     e.preventDefault()
     setIsDragging(true)
@@ -145,37 +185,28 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
   }, [isPanelOpen, panelPosition, panelSize, setPanelPosition])
 
   useEffect(() => {
-    // CRITICAL: Always clear data when no location is selected
-    // But don't clear data just because panel is closed - it might be minimized
-    if (!selectedLocation) {
+    if (!isPanelOpen || !selectedLocation) {
+      setPanelState('default')
+    }
+  }, [isPanelOpen, selectedLocation])
+
+  useEffect(() => {
+    if (!selectedLocation || !isPanelOpen) {
       setBloomingData(null)
       setError(null)
-      return
-    }
-
-    // Only fetch data if panel is actually open (not minimized)
-    if (!isPanelOpen) {
       return
     }
 
     const fetchBloomingData = async () => {
       setLoading(true)
       setError(null)
-
       try {
-        const response = await fetch(
-          `/api/blooming-events?latitude=${selectedLocation.lat}&longitude=${selectedLocation.lng}`
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
+        const response = await fetch(`/api/blooming-events?latitude=${selectedLocation.lat}&longitude=${selectedLocation.lng}`)
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const result = await response.json()
-
         if (result.success) {
-          setBloomingData(result.data) // Local state
-          setGlobalBloomingData(result.data) // Global store for chat access
+          setBloomingData(result.data)
+          setGlobalBloomingData(result.data)
         } else {
           setError(result.message || 'Failed to load data')
         }
@@ -186,36 +217,10 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
         setLoading(false)
       }
     }
-
     fetchBloomingData()
-  }, [selectedLocation, isPanelOpen])
+  }, [selectedLocation, isPanelOpen, setGlobalBloomingData])
 
-  // CRITICAL: Panel opening is controlled by Globe click (store.setPanelOpen)
-  // We intentionally avoid auto-opening here to allow manual close/minimize
-  // DO NOT CHANGE: Keeps user controls predictable
-  useEffect(() => {
-    // no-op by design
-  }, [selectedLocation, isPanelOpen])
-
-  // CRITICAL: Minimize/expand is user-driven; Globe click explicitly unminimizes
-  // DO NOT CHANGE: Prevents hidden state flips after user action
-  useEffect(() => {
-    // no-op by design
-  }, [isMinimized])
-
-  // CRITICAL: Always render panel when location is selected, even if minimized
-  // DO NOT CHANGE: This allows panel to show minimized state and auto-expand
-  // Only return null if no location is selected AND panel is closed
   if (!selectedLocation) return null
-
-  // Debug: Log current state
-  console.log('🖼️ ComparisonPanel render state:', { 
-    isPanelOpen, 
-    isMinimized, 
-    selectedLocation: selectedLocation ? `${selectedLocation.lat}, ${selectedLocation.lng}` : null,
-    willShowMinimized: isMinimized,
-    willShowFull: isPanelOpen && !isMinimized
-  })
 
   const getTrendIcon = (trend: string) => {
     if (trend.includes('+')) return <ArrowUp className="text-green-400 h-4 w-4" />
@@ -223,53 +228,88 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     return null
   }
 
-  // CRITICAL: Minimized view - shows floating button when panel is minimized
-  // DO NOT MODIFY: This allows users to restore panel after minimizing
-  // The panel will auto-expand when new location is selected (see useEffect above)
-  if (isMinimized) {
-    console.log('🔽 Rendering MINIMIZED panel view')
+  if (isMinimized && isPanelOpen) {
     return (
-      <div className={cn("fixed top-6 right-6 z-10 transform transition-transform duration-300", className)}>
-        <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+      <>
+        {/* Minimize mobile */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 p-2 md:hidden">
+          <Card 
+            className="bg-white/10 backdrop-blur-md border-white/20 flex items-center justify-between p-2 cursor-pointer"
             onClick={handleMaximize}
           >
-            <Maximize2 className="h-5 w-5" />
-          </Button>
-        </Card>
-      </div>
+            <div className="text-white text-sm font-semibold ml-2">
+              {bloomingData?.location.name || 'Blooming Analysis'}
+            </div>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <Maximize2 className="h-5 w-5" />
+            </Button>
+          </Card>
+        </div>
+        {/* Minimize desktop */}
+        <div className={cn("fixed top-6 right-6 z-10 transform transition-transform duration-300 hidden md:block", className)}>
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 w-16 h-16 flex items-center justify-center">
+            <Button 
+                size="icon" 
+                variant="ghost" 
+                className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+                onClick={handleMaximize}
+            >
+                <Maximize2 className="h-5 w-5" />
+            </Button>
+            </Card>
+        </div>
+      </>
     )
   }
 
-  console.log('🔍 Rendering FULL panel view')
   return (
     <div 
       ref={panelRef}
       className={cn(
         "fixed z-10 transform transition-transform duration-300",
-        isPanelOpen ? "translate-x-0" : "translate-x-full",
+        // Mobile responsive styles
+        "bottom-0 left-0 right-0 w-full rounded-t-2xl",
+        panelState === 'default' ? 'h-[75vh]' : 'h-full',
+        // Desktop styles with your custom positioning
+        "md:top-auto md:right-auto md:bottom-auto md:left-auto md:w-auto md:h-auto md:rounded-lg",
+        isPanelOpen ? "translate-y-0 md:translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full",
         className
       )}
       style={{ 
-        width: `${panelSize.width}px`,
-        height: `${panelSize.height}px`,
-        left: `${panelPosition.x}px`,
-        top: `${panelPosition.y}px`
+        // Apply custom positioning only on desktop
+        ...(window.innerWidth >= 768 && {
+          width: `${panelSize.width}px`,
+          height: `${panelSize.height}px`,
+          left: `${panelPosition.x}px`,
+          top: `${panelPosition.y}px`
+        })
       }}
     >
       <Card className="bg-white/10 backdrop-blur-md border-white/20 h-full flex flex-col relative">
+        {/* Mobile drag handle */}
+        <div 
+          className="md:hidden flex-shrink-0 flex justify-center py-3 cursor-grab active:cursor-grabbing"
+          onTouchStart={handleMobileDragStart}
+          onTouchEnd={handleDragEnd}
+          onMouseDown={handleMobileDragStart}
+          onMouseUp={handleDragEnd}
+        >
+          <div className="w-16 h-1.5 bg-white/30 rounded-full" />
+        </div>
+
         <CardHeader 
-          className="cursor-grab active:cursor-grabbing"
-          onMouseDown={handleDragStart}
+          className="cursor-grab active:cursor-grabbing pt-0 md:pt-6"
+          onMouseDown={handleDesktopDragStart}
         >
           <div className="absolute top-3 right-3 flex gap-1">
             <Button 
               size="icon" 
               variant="ghost" 
-              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer"
+              className="text-white/70 hover:bg-white/10 hover:text-white !cursor-pointer hidden md:flex"
               onClick={handleMinimize}
             >
               <Minimize2 className="h-4 w-4" />
@@ -294,27 +334,9 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
-          {loading && (
-            <div className="text-white/80 text-sm text-center py-4">
-              Loading blooming data...
-            </div>
-          )}
-
-          {error && (
-            <div className="text-red-400 text-sm p-3 bg-red-400/10 rounded">
-              {error}
-            </div>
-          )}
-
-          {bloomingData && !loading && !error && (
-            <TabContent bloomingData={bloomingData} getTrendIcon={getTrendIcon} />
-          )}
-
-          {(!loading && !error && !selectedLocation) && (
-            <div className="text-white/80 text-sm text-center py-4">
-              Click on the globe to view blooming data for that location.
-            </div>
-          )}
+          {loading && <div className="text-white/80 text-sm text-center py-4">Loading...</div>}
+          {error && <div className="text-red-400 text-sm p-3 bg-red-400/10 rounded">{error}</div>}
+          {bloomingData && !loading && !error && <TabContent bloomingData={bloomingData} getTrendIcon={getTrendIcon} />}
         </CardContent>
         
         {/* Resize Handle - Bottom Right */}

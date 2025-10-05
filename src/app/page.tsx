@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <>
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 p-6">
+      <header className="absolute top-0 left-0 right-0 z-10 p-4 md:p-6">
         <div className="flex items-center justify-between">
                  <div className="text-white">
                    <div className="flex items-center gap-3">
@@ -35,7 +35,7 @@ export default function HomePage() {
                        className="h-10 w-auto -ml-1.5"
                      />
                    </div>
-                   <p className="text-blue-200">Our Planet in Bloom</p>
+                   <p className="text-blue-200 text-sm md:text-base">Our Planet in Bloom</p>
                  </div>
         </div>
       </header>
@@ -77,9 +77,9 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="absolute bottom-0 right-6 z-10 p-4">
-        <div className="text-white/60 text-sm">
-          <p>Powered by NASA Landsat Data</p>
+      <footer className="absolute bottom-0 right-4 md:right-6 z-10 p-2 md:p-4">
+        <div className="text-white/60 text-xs md:text-sm">
+          <p>Powered by NASA Landsat & Three.js</p>
         </div>
       </footer>
     </>
