@@ -108,7 +108,7 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
     
     // Calculate new size based on initial size + delta
     const newWidth = Math.max(300, Math.min(800, resizeStart.width + deltaX))
-    const newHeight = Math.max(300, Math.min(window.innerHeight - 100, resizeStart.height + deltaY))
+    const newHeight = Math.max(300, Math.min(window.innerHeight - 50, resizeStart.height + deltaY))
     
     console.log('Resize debug:', {
       deltaX,
@@ -273,7 +273,7 @@ export default function ComparisonPanel({ className }: ComparisonPanelProps) {
         "fixed z-10 transform transition-transform duration-300",
         // Mobile responsive styles
         "bottom-0 left-0 right-0 w-full rounded-t-2xl",
-        panelState === 'default' ? 'h-[75vh]' : 'h-full',
+        panelState === 'default' ? 'h-[85vh]' : 'h-full',
         // Desktop styles with your custom positioning
         "md:top-auto md:right-auto md:bottom-auto md:left-auto md:w-auto md:h-auto md:rounded-lg",
         isPanelOpen ? "translate-y-0 md:translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full",

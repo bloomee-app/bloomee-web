@@ -141,7 +141,7 @@ export const useAppStore = create<AppState>((set) => ({
   chatMessages: [],
   chatWidgetSize: { width: 400, height: 350 },
   chatWidgetPosition: { x: 16, y: 0 }, // Will be calculated to bottom-right on first expand
-  panelSize: { width: 500, height: 600 },
+  panelSize: { width: 500, height: 750 },
   panelPosition: { x: 0, y: 0 }, // Will be calculated to right position
   selectedTimeRange: { start: new Date('2023-01-01'), end: new Date('2024-12-31') },
   selectedSeason: 'all',
