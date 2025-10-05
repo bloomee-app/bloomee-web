@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://bloome.earth/sitemap.xml
+Sitemap: https://bloomee.earth/sitemap.xml
 
 # Crawl-delay for respectful crawling
 Crawl-delay: 1

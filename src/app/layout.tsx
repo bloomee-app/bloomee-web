@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://bloome.earth',
+    url: 'https://bloomee.earth',
     siteName: 'Bloomee',
     title: 'Bloomee - Visualizing Earth\'s Bloom Events',
     description: 'Turning satellite data into ecological insight. An interactive 3D platform for tracking and analyzing global bloom events using NASA Earth observation data.',
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
   },
   manifest: '/manifest.json',
-  metadataBase: new URL('https://bloome.earth'),
+  metadataBase: new URL('https://bloomee.earth'),
   alternates: {
     canonical: '/',
   },
