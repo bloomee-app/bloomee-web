@@ -21,7 +21,7 @@ export default function HomePage() {
   const { isPanelOpen, togglePanel } = useAppStore()
 
   return (
-    <div className="min-h-screen bg-black">
+    <>
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 p-6">
         <div className="flex items-center justify-between">
@@ -38,12 +38,10 @@ export default function HomePage() {
         </div>
       </header>
 
-            {/* Main Content */}
-            <main className="relative h-screen">
-              {/* 3D Earth Canvas */}
-              <Globe className="w-full h-full" />
-
-
+      {/* Main Content */}
+      <main className="relative h-screen min-h-screen bg-black">
+        {/* 3D Earth Canvas */}
+        <Globe className="w-full h-full" />
 
         {/* Comparison Panel */}
         <ComparisonPanel />
@@ -60,6 +58,6 @@ export default function HomePage() {
           <p>Powered by NASA Landsat & Three.js</p>
         </div>
       </footer>
-    </div>
+    </>
   )
 }

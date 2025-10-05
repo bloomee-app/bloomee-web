@@ -16,10 +16,10 @@ export default function TabContent({ bloomingData, getTrendIcon }: TabContentPro
   return (
     <Tabs defaultValue="overview" className="h-full flex flex-col cursor-pointer">
       <TabsList className="grid w-full grid-cols-4 bg-white/10">
-        <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-        <TabsTrigger value="trends" className="text-xs">Trends</TabsTrigger>
-        <TabsTrigger value="insights" className="text-xs">Insights</TabsTrigger>
-        <TabsTrigger value="decisions" className="text-xs">Decisions</TabsTrigger>
+        <TabsTrigger value="overview" className="text-xs !cursor-pointer">Overview</TabsTrigger>
+        <TabsTrigger value="trends" className="text-xs !cursor-pointer">Trends</TabsTrigger>
+        <TabsTrigger value="insights" className="text-xs !cursor-pointer">Insights</TabsTrigger>
+        <TabsTrigger value="decisions" className="text-xs !cursor-pointer">Decisions</TabsTrigger>
       </TabsList>
       
       <div className="flex-1 overflow-y-auto">
