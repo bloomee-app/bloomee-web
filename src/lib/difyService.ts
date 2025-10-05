@@ -85,6 +85,11 @@ class DifyService {
   }
 
   private getOrCreateUserId(): string {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    
     let userId = localStorage.getItem('dify_user_id')
     if (!userId) {
       userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -106,7 +111,7 @@ class DifyService {
     conversationId?: string,
     inputs: Record<string, any> = {},
     responseMode: 'streaming' | 'blocking' = 'streaming'
-  ): Promise<DifyChatResponse | ReadableStream<DifyStreamResponse>> {
+  ): Promise<DifyChatResponse | ReadableStream<Uint8Array>> {
     const url = `${this.baseUrl}/chat-messages`
     
     // According to Dify docs, inputs should be an empty object if no variables are defined
@@ -143,7 +148,7 @@ class DifyService {
         if (!response.body) {
           throw new Error('No response body for streaming request')
         }
-        return response.body as ReadableStream<DifyStreamResponse>
+        return response.body as ReadableStream<Uint8Array>
       } else {
         const jsonResponse = await response.json()
         console.log('Dify AI blocking response:', jsonResponse)

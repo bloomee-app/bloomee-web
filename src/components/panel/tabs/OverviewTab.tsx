@@ -18,20 +18,33 @@ export default function OverviewTab({ bloomingData }: OverviewTabProps) {
 
       {/* Event Terkini */}
       <div className="space-y-2">
-        <h4 className="text-white font-medium">Recent Events</h4>
-        <div className="space-y-2">
-          {bloomingData.temporal_data.slice(-3).map((yearData) => (
-            <div key={yearData.year} className="bg-white/5 p-3 rounded text-sm">
-              <div className="text-white/90 font-medium">
-                <span className="text-blue-300">{yearData.summary.dominant_species}</span> in {yearData.year}
+        <h4 className="text-white font-medium">Recent Events ({bloomingData.temporal_data[0]?.blooming_events.length || 0})</h4>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {bloomingData.temporal_data[0]?.blooming_events.slice(0, 8).map((event, index) => (
+            <div key={index} className="bg-white/5 p-3 rounded text-sm">
+              <div className="flex justify-between items-start">
+                <div className="text-white/90 font-medium text-xs">
+                  {new Date(event.start_date).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </div>
+                <div className={`px-2 py-1 rounded text-xs ${
+                  event.intensity > 0.7 ? 'bg-green-500/20 text-green-300' :
+                  event.intensity > 0.4 ? 'bg-yellow-500/20 text-yellow-300' :
+                  'bg-blue-500/20 text-blue-300'
+                }`}>
+                  {event.intensity > 0.7 ? 'High' : event.intensity > 0.4 ? 'Medium' : 'Low'}
+                </div>
               </div>
-              <div className="flex justify-between text-white/70 text-xs mt-1">
-                <span>{yearData.blooming_events.length} events</span>
-                <span>Avg Intensity: {yearData.summary.avg_intensity.toFixed(2)}</span>
+              <div className="text-white/80 text-xs mt-1">
+                <span className="text-blue-300">{event.species[0]}</span> activity
               </div>
-              <p className="text-white/60 text-xs mt-1">
-                {yearData.summary.ecological_insights}
-              </p>
+              <div className="flex justify-between text-white/60 text-xs mt-1">
+                <span>NDVI: {event.ndvi_avg.toFixed(2)}</span>
+                <span>Temp: {event.weather_correlation.temperature_avg.toFixed(1)}°C</span>
+              </div>
             </div>
           ))}
         </div>

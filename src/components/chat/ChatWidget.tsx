@@ -37,6 +37,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [isResizing, setIsResizing] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [panelSize, setPanelSize] = useState({ width: 384, height: 384 }) // 96 * 4 = 384px
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 0 }) // Will be calculated to bottom position
   const [isPositionInitialized, setIsPositionInitialized] = useState(false)
@@ -126,7 +127,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       }
     }
     setIsLoaded(true)
-  }, [panelSize.height])
+  }, [])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -147,7 +148,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       setPanelPosition(prev => ({ ...prev, y: properY }))
       setIsPositionInitialized(true)
     }
-  }, [isChatWidgetExtended, isPositionInitialized, panelSize.height])
+  }, [isChatWidgetExtended, isPositionInitialized])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !currentConversationId) return
@@ -170,14 +171,25 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     try {
       // Send message to Dify AI (using blocking mode first for debugging)
       // According to Dify docs, inputs should be empty object if no variables are defined
+      console.log('Sending message to Dify AI:', { query, currentConversationId })
+      
+      // For new conversations, don't send conversation_id to let Dify create a new one
+      // Only send conversation_id if it's a valid UUID from Dify
+      const isDifyConversationId = currentConversationId && currentConversationId.startsWith('conv_') === false
+      const conversationIdToSend = isDifyConversationId ? currentConversationId : undefined
+      
+      console.log('Using conversation ID:', conversationIdToSend)
+      
       const response = await difyService.sendMessage(
         query,
-        currentConversationId,
+        conversationIdToSend,
         {}, // Empty inputs object as per documentation
         'blocking'
       )
 
       // Handle blocking response
+      console.log('Dify AI response received:', response)
+      
       if (response && typeof response === 'object' && 'answer' in response) {
         const difyResponse = response as any
         
@@ -194,16 +206,28 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
         setMessages(prev => [...prev, assistantMessage])
         chatHistoryService.addMessage(currentConversationId, assistantMessage)
         
-        // Update conversation ID if it changed
+        // Update conversation ID if it changed or if this is a new conversation
         if (difyResponse.conversation_id && difyResponse.conversation_id !== currentConversationId) {
+          console.log('Updating conversation ID from', currentConversationId, 'to', difyResponse.conversation_id)
           setCurrentConversationId(difyResponse.conversation_id)
           chatHistoryService.setCurrentConversation(difyResponse.conversation_id)
+          
+          // Update the conversation name in chat history service
+          chatHistoryService.updateConversationName(difyResponse.conversation_id, 'New Chat')
         }
+        
+        console.log('Successfully processed Dify AI response')
       } else {
+        console.error('Invalid response format from Dify AI:', response)
         throw new Error('Invalid response format from Dify AI')
       }
     } catch (error) {
       console.error('Error sending message to Dify AI:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown'
+      })
       
       // Fallback to mock response if Dify AI fails
       const mockResponse = await generateMockResponse(query)
@@ -219,7 +243,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       chatHistoryService.addMessage(currentConversationId, assistantMessage)
       
       // Show warning about fallback
-      setError('Using fallback response. Dify AI configuration may need adjustment.')
+      setError(`Using fallback response. Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
@@ -370,15 +394,32 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     e.preventDefault()
     e.stopPropagation()
     setIsResizing(true)
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: panelSize.width,
+      height: panelSize.height
+    })
   }
 
   const handleResizeMove = (e: MouseEvent) => {
     if (!isResizing) return
 
-    const newWidth = Math.max(300, Math.min(600, e.clientX - panelPosition.x))
-    const newHeight = Math.max(300, Math.min(500, e.clientY - panelPosition.y))
+    const deltaX = e.clientX - resizeStart.x
+    const deltaY = e.clientY - resizeStart.y
+    
+    const newWidth = Math.max(300, Math.min(800, resizeStart.width + deltaX))
+    const newHeight = Math.max(300, Math.min(700, resizeStart.height + deltaY))
     
     setPanelSize({ width: newWidth, height: newHeight })
+    
+    // Adjust position if panel goes out of viewport
+    const newX = Math.min(panelPosition.x, window.innerWidth - newWidth)
+    const newY = Math.min(panelPosition.y, window.innerHeight - newHeight)
+    
+    if (newX !== panelPosition.x || newY !== panelPosition.y) {
+      setPanelPosition({ x: Math.max(0, newX), y: Math.max(0, newY) })
+    }
   }
 
   const handleMouseUp = () => {
@@ -413,7 +454,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
-  }, [isResizing, isDragging, handleResizeMove, handleDragMove])
+  }, [isResizing, isDragging, panelPosition.x, panelPosition.y])
 
   if (!isChatOpen) return null
 
@@ -427,8 +468,8 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
           ? { top: `${panelPosition.y}px` }
           : { bottom: '16px' }
         ),
-        width: '384px', // Always full size for transform to work
-        height: '384px', // Always full size for transform to work
+        width: isChatWidgetExtended ? `${panelSize.width}px` : '384px', // Use panelSize when expanded
+        height: isChatWidgetExtended ? `${panelSize.height}px` : '384px', // Use panelSize when expanded
         transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease'
       }}
     >
@@ -440,8 +481,8 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
             : "bg-white/10 backdrop-blur-md border border-white/60 !cursor-pointer hover:bg-white/15 hover:border-white/80"
         )}
         style={{
-          width: '384px', // Always full size for transform to work
-          height: '384px', // Always full size for transform to work
+          width: isChatWidgetExtended ? `${panelSize.width}px` : '384px', // Use panelSize when expanded
+          height: isChatWidgetExtended ? `${panelSize.height}px` : '384px', // Use panelSize when expanded
           borderRadius: isChatWidgetExtended 
             ? '16px' 
             : '126px 126px 126px 0px', // Rounded corners with pointed bottom-left
@@ -690,10 +731,11 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
             
             {/* Resize Handle */}
             <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
+              className="absolute bottom-0 right-0 w-6 h-6 cursor-nw-resize opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center bg-black/20 hover:bg-black/40 rounded-tl-lg"
               onMouseDown={handleResizeStart}
+              title="Resize chat panel"
             >
-              <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
+              <GripVertical className="w-4 h-4 text-white/80 rotate-45" />
             </div>
           </div>
         )}

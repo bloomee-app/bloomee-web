@@ -174,6 +174,17 @@ class ChatHistoryService {
     this.saveChatHistory(history)
   }
 
+  // Update conversation name
+  updateConversationName(conversationId: string, newName: string): void {
+    const history = this.getChatHistory()
+    const conversation = history.conversations.find(c => c.id === conversationId)
+    if (conversation) {
+      conversation.title = newName
+      conversation.updatedAt = new Date()
+      this.saveChatHistory(history)
+    }
+  }
+
   // Get current conversation ID
   getCurrentConversationId(): string | undefined {
     const history = this.getChatHistory()
