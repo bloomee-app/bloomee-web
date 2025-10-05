@@ -1,10 +1,9 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { 
-  MessageCircle, 
   Send, 
   Minimize2, 
   Bot, 
@@ -13,19 +12,9 @@ import {
   GripVertical
 } from 'lucide-react'
 import { FaClockRotateLeft } from "react-icons/fa6"
+import { IoChatbubbleOutline } from "react-icons/io5";
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
-
-// Helper function to get stored chat state
-const getStoredChatState = () => {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = localStorage.getItem('bloome-chat-state')
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
 
 interface ChatMessage {
   id: string
@@ -42,87 +31,25 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [panelSize, setPanelSize] = useState({ width: 384, height: 384 }) // 96 * 4 = 384px
+  const [panelPosition, setPanelPosition] = useState({ x: 16, y: 0 }) // Will be calculated to bottom position
+  const [isPositionInitialized, setIsPositionInitialized] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<HTMLDivElement>(null)
-  const [showHistory, setShowHistory] = useState(false)
   
-  // CRITICAL: Use global store for chat state
-  // DO NOT CHANGE: This ensures chat state persists across interactions
   const { 
     isChatOpen, 
     setChatOpen, 
     selectedLocation, 
     bloomingData,
-    activeTab,
     isChatWidgetExtended,
-    setChatWidgetExtended,
-    chatWidgetSize,
-    setChatWidgetSize,
-    chatWidgetPosition,
-    setChatWidgetPosition,
-    restoreChatState
+    setChatWidgetExtended
   } = useAppStore()
-
-  // Initialize chat state - always start minimized
-  useEffect(() => {
-    // Always start with minimized state first
-    setChatOpen(true) // Button needs to be visible
-    setChatWidgetExtended(false) // But panel starts minimized
-    
-    // Only restore position from localStorage, ignore extended state
-    const storedState = getStoredChatState()
-    if (storedState && storedState.chatWidgetPosition) {
-      setChatWidgetPosition(storedState.chatWidgetPosition)
-    }
-    
-    // Force minimized state multiple times to ensure it's applied
-    const timeoutId1 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 10)
-    
-    const timeoutId2 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 100)
-    
-    const timeoutId3 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 500)
-    
-    const timeoutId4 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 1000)
-    
-    const timeoutId5 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 2000)
-    
-    const timeoutId6 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 3000)
-    
-    const timeoutId7 = setTimeout(() => {
-      setChatWidgetExtended(false)
-    }, 4000)
-    
-    return () => {
-      clearTimeout(timeoutId1)
-      clearTimeout(timeoutId2)
-      clearTimeout(timeoutId3)
-      clearTimeout(timeoutId4)
-      clearTimeout(timeoutId5)
-      clearTimeout(timeoutId6)
-      clearTimeout(timeoutId7)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run once on mount
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   // Initialize with welcome message
   useEffect(() => {
@@ -136,18 +63,43 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
   }, [isChatOpen, messages.length])
 
-  // Set proper position when expanding
+  // Load saved state from localStorage on mount
   useEffect(() => {
-    if (isChatWidgetExtended && isChatOpen) {
-      // Calculate proper bottom-left position if at default (0,0)
-      if (chatWidgetPosition.x === 0 && chatWidgetPosition.y === 0) {
-        const properX = 16
-        const properY = Math.max(0, window.innerHeight - chatWidgetSize.height - 16)
-        setChatWidgetPosition({ x: properX, y: properY })
+    const savedExtended = localStorage.getItem('chatWidgetExtended')
+    if (savedExtended !== null) {
+      const isExtended = JSON.parse(savedExtended)
+      setChatWidgetExtended(isExtended)
+      
+      // If it was expanded, set proper position immediately
+      if (isExtended) {
+        const properY = Math.max(16, window.innerHeight - panelSize.height - 16)
+        setPanelPosition({ x: 16, y: properY })
+        setIsPositionInitialized(true)
       }
     }
-  }, [isChatWidgetExtended, isChatOpen, chatWidgetPosition.x, chatWidgetPosition.y, chatWidgetSize.height, setChatWidgetPosition])
+    setIsLoaded(true)
+  }, [panelSize.height])
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Save state to localStorage when it changes (only after initial load)
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('chatWidgetExtended', JSON.stringify(isChatWidgetExtended))
+    }
+  }, [isChatWidgetExtended, isLoaded])
+
+  // Set proper bottom position when expanding for the first time
+  useEffect(() => {
+    if (isChatWidgetExtended && !isPositionInitialized) {
+      const properY = Math.max(16, window.innerHeight - panelSize.height - 16)
+      setPanelPosition(prev => ({ ...prev, y: properY }))
+      setIsPositionInitialized(true)
+    }
+  }, [isChatWidgetExtended, isPositionInitialized, panelSize.height])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
@@ -163,7 +115,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setInputValue('')
     setIsLoading(true)
 
-    // Mock AI response based on context
+    // Mock AI response
     const aiResponse = await generateMockResponse(inputValue.trim())
     
     const assistantMessage: ChatMessage = {
@@ -176,26 +128,29 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     setTimeout(() => {
       setMessages(prev => [...prev, assistantMessage])
       setIsLoading(false)
-    }, 1000 + Math.random() * 2000) // 1-3 second delay
+    }, 1000 + Math.random() * 2000)
   }
 
-  const handleExpand = useCallback(() => {
+  const handleExpand = () => {
     setChatOpen(true)
     setChatWidgetExtended(true)
-  }, [setChatOpen, setChatWidgetExtended])
+    
+    // Set position immediately
+    const properY = Math.max(16, window.innerHeight - panelSize.height - 16)
+    setPanelPosition({ x: 16, y: properY })
+    setIsPositionInitialized(true)
+  }
 
-  const handleMinimize = useCallback(() => {
-    setChatOpen(true) // Ensure button is visible
-    setChatWidgetExtended(false) // Minimize the panel
-  }, [setChatOpen, setChatWidgetExtended])
+  const handleMinimize = () => {
+    setChatOpen(true)
+    setChatWidgetExtended(false)
+  }
 
   const generateMockResponse = async (userInput: string): Promise<string> => {
-    // Get current context
     const location = selectedLocation
     const biome = bloomingData?.location?.biome || 'unknown'
     const locationName = bloomingData?.location?.name || 'this location'
     
-    // Simple keyword-based responses (mock AI)
     const input = userInput.toLowerCase()
     
     if (input.includes('bloom') || input.includes('flowering')) {
@@ -218,7 +173,6 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       return `I can help you understand:\n\n• **Blooming Patterns** - Analyze seasonal flowering trends and intensity\n• **Biodiversity Insights** - Explain species composition and ecological diversity\n• **Climate Impacts** - Discuss temperature and precipitation effects on blooms\n• **Conservation Guidance** - Provide recommendations for ecosystem protection\n• **Ecological Context** - Explain the broader environmental implications\n\nTry asking me about any of these topics for the current location!`
     }
     
-    // Default response
     return `That's an interesting question about ${locationName}! Based on the available data for this ${biome} region, I can provide insights about blooming patterns, biodiversity, climate impacts, or conservation strategies. Could you be more specific about what aspect you'd like me to explain?`
   }
 
@@ -229,50 +183,51 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
   }
 
-  // Resize functionality
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsResizing(true)
-  }, [])
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing || !widgetRef.current) return
-
-    const rect = widgetRef.current.getBoundingClientRect()
-    const newWidth = Math.max(300, Math.min(800, e.clientX - rect.left))
-    const newHeight = Math.max(300, Math.min(600, e.clientY - rect.top))
-    
-    setChatWidgetSize({ width: newWidth, height: newHeight })
-  }, [isResizing, setChatWidgetSize])
-
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false)
-    setIsDragging(false)
-  }, [])
-
   // Drag functionality
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
+  const handleDragStart = (e: React.MouseEvent) => {
     if (isResizing) return
     e.preventDefault()
     setIsDragging(true)
     setDragStart({
-      x: e.clientX - chatWidgetPosition.x,
-      y: e.clientY - chatWidgetPosition.y
+      x: e.clientX - panelPosition.x,
+      y: e.clientY - panelPosition.y
     })
-  }, [isResizing, chatWidgetPosition])
+  }
 
-  const handleDragMove = useCallback((e: MouseEvent) => {
+  const handleDragMove = (e: MouseEvent) => {
     if (!isDragging || isResizing) return
 
-    const newX = Math.max(0, Math.min(window.innerWidth - chatWidgetSize.width, e.clientX - dragStart.x))
-    const newY = Math.max(0, Math.min(window.innerHeight - chatWidgetSize.height, e.clientY - dragStart.y))
+    const newX = Math.max(0, Math.min(window.innerWidth - panelSize.width, e.clientX - dragStart.x))
+    const newY = Math.max(0, Math.min(window.innerHeight - panelSize.height, e.clientY - dragStart.y))
     
-    setChatWidgetPosition({ x: newX, y: newY })
-  }, [isDragging, isResizing, dragStart, chatWidgetSize, setChatWidgetPosition])
+    setPanelPosition({ x: newX, y: newY })
+  }
 
+  // Resize functionality
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsResizing(true)
+  }
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing) return
+
+    const newWidth = Math.max(300, Math.min(600, e.clientX - panelPosition.x))
+    const newHeight = Math.max(300, Math.min(500, e.clientY - panelPosition.y))
+    
+    setPanelSize({ width: newWidth, height: newHeight })
+  }
+
+  const handleMouseUp = () => {
+    setIsResizing(false)
+    setIsDragging(false)
+  }
+
+  // Event listeners for drag and resize
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mousemove', handleResizeMove)
       document.addEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = 'nw-resize'
       document.body.style.userSelect = 'none'
@@ -282,7 +237,7 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
       document.body.style.cursor = 'grabbing'
       document.body.style.userSelect = 'none'
     } else {
-      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mousemove', handleResizeMove)
       document.removeEventListener('mousemove', handleDragMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = ''
@@ -290,69 +245,66 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mousemove', handleResizeMove)
       document.removeEventListener('mousemove', handleDragMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
-  }, [isResizing, isDragging, handleMouseMove, handleDragMove, handleMouseUp])
+  }, [isResizing, isDragging, handleResizeMove, handleDragMove])
 
-  // Calculate positions for animation
-  const minimizedPos = { x: 16, y: window.innerHeight - 64 }
-  const expandedPos = chatWidgetPosition.x === 0 && chatWidgetPosition.y === 0
-    ? { x: 16, y: window.innerHeight - chatWidgetSize.height - 16 }
-    : chatWidgetPosition
+  if (!isChatOpen) return null
 
   return (
     <div 
       ref={widgetRef}
-      className={cn(
-        "fixed z-50 origin-bottom-left",
-        (isDragging || isResizing) ? "transition-none" : "transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
-        className
-      )}
-      style={{ 
-        width: isChatWidgetExtended ? `${chatWidgetSize.width}px` : '48px',
-        height: isChatWidgetExtended ? `${chatWidgetSize.height}px` : '48px',
-        left: isChatWidgetExtended ? `${expandedPos.x}px` : `${minimizedPos.x}px`,
-        top: isChatWidgetExtended ? `${expandedPos.y}px` : `${minimizedPos.y}px`,
-        transformOrigin: 'bottom left',
-        pointerEvents: 'auto', // Always allow clicks
+      className={cn("fixed z-50", className)}
+      style={{
+        left: isChatWidgetExtended ? `${panelPosition.x}px` : '16px',
+        ...(isChatWidgetExtended
+          ? { top: `${panelPosition.y}px` }
+          : { bottom: '16px' }
+        ),
+        width: '384px', // Always full size for transform to work
+        height: '384px', // Always full size for transform to work
+        transition: (isDragging || isResizing) ? 'none' : 'all 0.3s ease'
       }}
     >
-        <Card 
-          className="h-full bg-white/5 backdrop-blur-md border-white/10 flex flex-col relative shadow-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-          style={{
-            borderRadius: isChatWidgetExtended ? '12px' : '32px 32px 32px 4px',
-          }}
-        >
-          {/* Minimized State - Button */}
-          <div 
-            className={cn(
-              "absolute inset-0 flex items-center justify-center transition-opacity duration-300 z-10",
-              !isChatWidgetExtended ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-            )}
-          >
-            <Button
-              onClick={handleExpand}
-              size="lg"
-              className="h-12 w-12 bg-white/5 backdrop-blur-md border border-white/20 hover:bg-white/10 shadow-2xl !cursor-pointer transition-all duration-500"
-              style={{
-                borderRadius: '32px 32px 32px 4px',
-              }}
-            >
-              <MessageCircle className="h-6 w-6 text-white" />
-            </Button>
+      <Card 
+        className={cn(
+          "transition-all duration-300 ease-out overflow-hidden",
+          isChatWidgetExtended 
+            ? "bg-white/10 backdrop-blur-xl border border-white/20" 
+            : "bg-white/10 backdrop-blur-md border border-white/60 !cursor-pointer hover:bg-white/15 hover:border-white/80"
+        )}
+        style={{
+          width: '384px', // Always full size for transform to work
+          height: '384px', // Always full size for transform to work
+          borderRadius: isChatWidgetExtended 
+            ? '16px' 
+            : '126px 126px 126px 0px', // Rounded corners with pointed bottom-left
+          transformOrigin: 'bottom left', // Expand from bottom-left corner
+          transform: isChatWidgetExtended 
+            ? 'scale(1)' 
+            : 'scale(0.125)', // 48/384 = 0.125 (48px button from 384px panel)
+          boxShadow: isChatWidgetExtended 
+            ? '0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)' 
+            : '0 4px 20px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.3)'
+        }}
+        onClick={!isChatWidgetExtended ? handleExpand : undefined}
+      >
+        {/* Minimized State - Button */}
+        {!isChatWidgetExtended && (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="relative z-10" style={{ transform: 'scale(8)' }}>
+              <IoChatbubbleOutline className="h-6 w-6 text-white/90 drop-shadow-sm" />
+            </div>
           </div>
+        )}
 
-          {/* Expanded State - Panel */}
-          <div 
-            className={cn(
-              "absolute inset-0 flex flex-col transition-opacity duration-300 z-0",
-              isChatWidgetExtended ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-            )}
-          >
+        {/* Expanded State - Panel */}
+        {isChatWidgetExtended && (
+          <div className="h-full flex flex-col">
             {/* Header - Draggable */}
             <div 
               className="flex items-center justify-between p-4 border-b border-white/10 cursor-grab active:cursor-grabbing"
@@ -383,120 +335,121 @@ export default function ChatWidget({ className }: ChatWidgetProps) {
               </div>
             </div>
 
-        {/* Chat History Panel */}
-        {showHistory && (
-          <div className="border-b border-white/10 p-4 bg-white/5">
-            <h4 className="text-sm font-medium text-white mb-3">Chat History</h4>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                <div className="font-medium">Session 1 - Today 14:30</div>
-                <div className="text-white/50">Discussed blooming patterns in Amazon rainforest...</div>
+            {/* Chat History Panel */}
+            {showHistory && (
+              <div className="border-b border-white/10 p-4 bg-white/5">
+                <h4 className="text-sm font-medium text-white mb-3">Chat History</h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                    <div className="font-medium">Session 1 - Today 14:30</div>
+                    <div className="text-white/50">Discussed blooming patterns in Amazon rainforest...</div>
+                  </div>
+                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                    <div className="font-medium">Session 2 - Today 12:15</div>
+                    <div className="text-white/50">Asked about biodiversity conservation strategies...</div>
+                  </div>
+                  <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
+                    <div className="font-medium">Session 3 - Yesterday 16:45</div>
+                    <div className="text-white/50">Explored climate impact on flowering seasons...</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                <div className="font-medium">Session 2 - Today 12:15</div>
-                <div className="text-white/50">Asked about biodiversity conservation strategies...</div>
-              </div>
-              <div className="text-xs text-white/70 p-2 bg-white/10 rounded cursor-pointer hover:bg-white/20 transition-colors">
-                <div className="font-medium">Session 3 - Yesterday 16:45</div>
-                <div className="text-white/50">Explored climate impact on flowering seasons...</div>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-3",
-                message.type === 'user' ? 'justify-end' : 'justify-start'
-              )}
-            >
-              {message.type === 'assistant' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-white" />
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex gap-3",
+                    message.type === 'user' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  {message.type === 'assistant' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-lg p-3 text-sm",
+                      message.type === 'user'
+                        ? 'bg-blue-600 text-white ml-auto'
+                        : 'bg-white/10 text-white/90'
+                    )}
+                  >
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <div className={cn(
+                      "text-xs mt-1 opacity-60",
+                      message.type === 'user' ? 'text-blue-100' : 'text-white/60'
+                    )}>
+                      {message.timestamp.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
+                  </div>
+
+                  {message.type === 'user' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-3 text-sm text-white/90">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Thinking...</span>
+                    </div>
+                  </div>
                 </div>
               )}
-              
-              <div
-                className={cn(
-                  "max-w-[80%] rounded-lg p-3 text-sm",
-                  message.type === 'user'
-                    ? 'bg-blue-600 text-white ml-auto'
-                    : 'bg-white/10 text-white/90'
-                )}
-              >
-                <div className="whitespace-pre-wrap">{message.content}</div>
-                <div className={cn(
-                  "text-xs mt-1 opacity-60",
-                  message.type === 'user' ? 'text-blue-100' : 'text-white/60'
-                )}>
-                  {message.timestamp.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </div>
-              </div>
 
-              {message.type === 'user' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-              )}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
 
-          {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-white" />
-              </div>
-              <div className="bg-white/10 rounded-lg p-3 text-sm text-white/90">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Thinking...</span>
-                </div>
+            {/* Input */}
+            <div className="p-4 border-t border-white/10">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask about blooming patterns, biodiversity, climate impacts..."
+                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-10 !cursor-pointer"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isLoading}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 h-10 w-10 p-0 !cursor-pointer"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about blooming patterns, biodiversity, climate impacts..."
-              className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-9 !cursor-pointer"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isLoading}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 h-9 w-9 p-0 !cursor-pointer"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        
+            
             {/* Resize Handle */}
             <div
               className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
-              onMouseDown={handleMouseDown}
+              onMouseDown={handleResizeStart}
             >
               <GripVertical className="w-4 h-4 text-white/60 rotate-45" />
             </div>
           </div>
-        </Card>
+        )}
+      </Card>
     </div>
   )
 }

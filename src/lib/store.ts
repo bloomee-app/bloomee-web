@@ -72,8 +72,6 @@ interface AppState {
   isChatOpen: boolean
   isChatWidgetExtended: boolean
   chatMessages: ChatMessage[]
-  chatWidgetSize: { width: number; height: number }
-  chatWidgetPosition: { x: number; y: number }
 
   // Panel resize state
   panelSize: { width: number; height: number }
@@ -107,8 +105,6 @@ interface AppState {
   setScaleMode: (mode: 'global' | 'regional' | 'local') => void
   setChatOpen: (open: boolean) => void
   setChatWidgetExtended: (extended: boolean) => void
-  setChatWidgetSize: (size: { width: number; height: number }) => void
-  setChatWidgetPosition: (position: { x: number; y: number }) => void
   setPanelSize: (size: { width: number; height: number }) => void
   setPanelPosition: (position: { x: number; y: number }) => void
   addChatMessage: (message: ChatMessage) => void
@@ -119,34 +115,8 @@ interface AppState {
   setTrendData: (data: TrendDataPoint[]) => void
   setEcologicalInsights: (insights: EcologicalInsight[]) => void
   setConservationInsights: (insights: ConservationInsight[]) => void
-  restoreChatState: () => void
 }
 
-// Helper functions for localStorage persistence
-const getStoredChatState = () => {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = localStorage.getItem('bloome-chat-state')
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
-
-const setStoredChatState = (state: { isChatOpen: boolean; isChatWidgetExtended: boolean; chatWidgetPosition: { x: number; y: number } }) => {
-  if (typeof window === 'undefined') return
-  try {
-    // Only store position and open state, never store extended state
-    const stateToStore = {
-      isChatOpen: state.isChatOpen,
-      isChatWidgetExtended: false, // Always store as false
-      chatWidgetPosition: state.chatWidgetPosition
-    }
-    localStorage.setItem('bloome-chat-state', JSON.stringify(stateToStore))
-  } catch {
-    // Ignore localStorage errors
-  }
-}
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state - always start with default values to avoid hydration mismatch
@@ -166,8 +136,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   isChatOpen: true, // Always start with chat open (button visible)
   isChatWidgetExtended: false, // But always start minimized
   chatMessages: [],
-  chatWidgetSize: { width: 400, height: 350 },
-  chatWidgetPosition: { x: 16, y: 0 },
   panelSize: { width: 500, height: 750 },
   panelPosition: { x: 0, y: 0 }, // Will be calculated to right position
   selectedTimeRange: { start: new Date('2023-01-01'), end: new Date('2024-12-31') },
@@ -214,45 +182,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ scaleMode: mode }),
 
   setChatOpen: (open) =>
-    set((state) => {
-      const newState = { ...state, isChatOpen: open }
-      // Only persist if chat is being closed (to remember position)
-      if (!open) {
-        setStoredChatState({
-          isChatOpen: newState.isChatOpen,
-          isChatWidgetExtended: false, // Always store as false
-          chatWidgetPosition: newState.chatWidgetPosition
-        })
-      }
-      return newState
-    }),
+    set({ isChatOpen: open }),
 
   setChatWidgetExtended: (extended) =>
-    set((state) => {
-      const newState = { ...state, isChatWidgetExtended: extended }
-      // Only persist position, never extended state
-      setStoredChatState({
-        isChatOpen: newState.isChatOpen,
-        isChatWidgetExtended: false, // Always store as false
-        chatWidgetPosition: newState.chatWidgetPosition
-      })
-      return newState
-    }),
-
-  setChatWidgetSize: (size) =>
-    set({ chatWidgetSize: size }),
-
-  setChatWidgetPosition: (position) =>
-    set((state) => {
-      const newState = { ...state, chatWidgetPosition: position }
-      // Persist position only
-      setStoredChatState({
-        isChatOpen: newState.isChatOpen,
-        isChatWidgetExtended: false, // Always store as false
-        chatWidgetPosition: newState.chatWidgetPosition
-      })
-      return newState
-    }),
+    set({ isChatWidgetExtended: extended }),
 
   setPanelSize: (size) =>
     set({ panelSize: size }),
@@ -284,21 +217,4 @@ export const useAppStore = create<AppState>((set, get) => ({
   setConservationInsights: (insights) =>
     set({ conservationInsights: insights }),
 
-  restoreChatState: () => {
-    const storedState = getStoredChatState()
-    if (storedState) {
-      set({
-        // Always start minimized, but keep chat "open" so button is visible
-        isChatOpen: true,
-        isChatWidgetExtended: false, // Always start minimized - override any stored extended state
-        chatWidgetPosition: storedState.chatWidgetPosition || { x: 16, y: 0 }
-      })
-    } else {
-      // First time - initialize with button visible
-      set({
-        isChatOpen: true,
-        isChatWidgetExtended: false
-      })
-    }
-  },
 }))
