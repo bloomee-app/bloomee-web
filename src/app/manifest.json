@@ -1,6 +1,7 @@
-`{
-  "name": "MyWebSite",
-  "short_name": "MySite",
+{
+  "name": "Bloomee - Visualizing Earth's Bloom Events",
+  "short_name": "Bloomee",
+  "description": "Turning satellite data into ecological insight. An interactive 3D platform for tracking and analyzing global bloom events using NASA Earth observation data.",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -13,9 +14,36 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icon1.png",
+      "sizes": "192x192",
+      "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["science", "education", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Bloomee Desktop View"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Bloomee Mobile View"
+    }
+  ]
 }
