@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "bloomee-web",
+  "compatibility_date": "2025-10-30",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "r2_buckets": [
+    {
+      "bucket_name": "bloomee-web-inc-cache",
+      "binding": "NEXT_INC_CACHE_R2_BUCKET"
+    }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_UMAMI_ID": "438df938-ffeb-4e95-b23d-d609f882ae92",
+    "NEXT_PUBLIC_UMAMI_DOMAINS": "bloomee.earth"
+  }
+}
