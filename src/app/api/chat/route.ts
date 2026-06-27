@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const DIFY_API_BASE_URL = process.env.DIFY_API_BASE_URL || 'https://dify-api.faizath.com/v1'
+const DIFY_API_BASE_URL = process.env.DIFY_API_BASE_URL || 'https://api.dify.ai/v1'
 const DIFY_API_KEY = process.env.DIFY_API_KEY
 
 export async function POST(request: NextRequest) {

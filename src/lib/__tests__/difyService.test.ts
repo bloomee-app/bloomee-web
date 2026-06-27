@@ -54,7 +54,7 @@ describe('DifyService', () => {
     const result = await difyService.sendMessage('Test query', undefined, {}, 'blocking')
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://dify-api.faizath.com/v1/chat-messages',
+      'https://api.dify.ai/v1/chat-messages',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -110,7 +110,7 @@ describe('DifyService', () => {
     const result = await difyService.getMessages('test-conversation-id', 'first-id', 10)
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://dify-api.faizath.com/v1/messages?user=user_1234567890_abc123&conversation_id=test-conversation-id&limit=10&first_id=first-id',
+      'https://api.dify.ai/v1/messages?user=user_1234567890_abc123&conversation_id=test-conversation-id&limit=10&first_id=first-id',
       expect.objectContaining({
         method: 'GET',
         headers: {
