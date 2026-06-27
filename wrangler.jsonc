@@ -18,8 +18,9 @@
     }
   ],
   "vars": {
-    "DIFY_API_BASE_URL": "https://dify-api.faizath.com/v1",
+    "DIFY_API_BASE_URL": "https://api.dify.ai/v1",
     "NEXT_PUBLIC_UMAMI_ID": "438df938-ffeb-4e95-b23d-d609f882ae92",
     "NEXT_PUBLIC_UMAMI_DOMAINS": "bloomee.earth"
-  }
+  },
+  "account_id": "0c2ea70ec62e0c4f1796c8438da9a47e"
 }
