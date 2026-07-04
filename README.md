@@ -24,11 +24,47 @@
 
 Bloomee is an interactive Earth-observation platform that **detects, visualizes, and explains flowering events across space and time**—putting the "where, when, and why" of blooms in one place. From tracking cherry blossoms in Japan to monitoring wildflower superblooms in California, Bloomee harnesses the power of NASA's Earth observation data to understand global flowering phenology.
 
-### 🎯 Challenge: BloomWatch
+<div align="center">
 
-Bloomee addresses the **"BloomWatch: An Earth Observation Application for Global Flowering Phenology"** challenge from the [NASA Space Apps Challenge 2025](https://www.spaceappschallenge.org/2025/). 
+<table>
+<tr>
+<td width="50%">
 
-**The Challenge**: Harness NASA Earth observation data to create a dynamic visual tool that displays and/or detects plant blooming events around the globe, advancing solutions for monitoring, predicting, or managing vegetation.
+<a href="https://drive.google.com/file/d/1uRHJuCOsljoKuxdpxp8OgjSraQDF4ZUH/preview">
+<img src="assets/video_placeholder.png" alt="Bloomee Project Showcase Video" width="100%">
+</a>
+<p><em>🎥 Watch the project showcase video</em></p>
+
+</td>
+<td width="50%">
+
+<a href="https://drive.google.com/file/d/1MKNiogopnmvyVNXW1oH9SlR7dV9IxzuT/preview">
+<img src="assets/deck_placeholder.png" alt="Bloomee Presentation Deck" width="100%">
+</a>
+<p><em>📊 View the presentation deck</em></p>
+
+</td>
+</tr>
+</table>
+
+</div>
+
+### 🏆 Competition Achievement
+
+Bloomee was built for the [NASA Space Apps Challenge 2025](https://www.spaceappschallenge.org/2025/) — the world's largest annual global hackathon, where thousands of teams across hundreds of cities use NASA's open Earth and space data to build solutions for real-world challenges over a single weekend.
+
+Competing in the **["BloomWatch: An Earth Observation Application for Global Flowering Phenology"](https://www.spaceappschallenge.org/2025/challenges/bloomwatch-an-earth-observation-application-for-global-flowering-phenology/)** challenge, Team [Ganespace](https://www.spaceappschallenge.org/2025/find-a-team/ganespace/) built Bloomee to harness NASA Earth observation data for a dynamic visual tool that displays and detects plant blooming events around the globe.
+
+At the [Bandung, Indonesia](https://www.spaceappschallenge.org/2025/local-events/bandung/) local event, Bloomee earned:
+
+- 🥇 **Winner** — NASA Space Apps Challenge 2025, Bandung Chapter
+- 🌟 **Best Innovation Award** — NASA Space Apps Challenge 2025, Bandung Chapter
+- 🌍 **Global Finalist Nominee** — advanced to global nomination as a result of the Bandung Chapter win
+
+<div align="center">
+<img src="assets/awarding.png" alt="Bloomee - Best Innovation Award, NASA Space Apps Challenge 2025 Bandung" width="800">
+<p><em>Team Ganespace receiving the Best Innovation Award for Bloomee at NASA Space Apps Challenge 2025, Bandung, Indonesia</em></p>
+</div>
 
 ### ✨ Key Features
 
@@ -63,29 +99,56 @@ The platform auto-selects the best-performing model and outputs bloom/NDVI forec
 
 <div align="center">
 
-### 🌍 Interactive 3D Globe
-<img src="assets/screenshots/1.png" alt="Bloomee Globe View" width="800">
+<table>
+<tr>
+<td width="50%">
+
+#### 🌍 Interactive 3D Globe
+<img src="assets/screenshots/1.png" alt="Bloomee Globe View" width="100%">
 <p><em>Default view when users land on the website - explore flowering events across the interactive 3D globe</em></p>
 
-### 🛰️ Landsat Analysis & Species Overview
-<img src="assets/screenshots/2.png" alt="Landsat NDVI Analysis" width="800">
+</td>
+<td width="50%">
+
+#### 🛰️ Landsat Analysis & Species Overview
+<img src="assets/screenshots/2.png" alt="Landsat NDVI Analysis" width="100%">
 <p><em>Detailed Landsat analysis with NDVI data and comprehensive flower species overview</em></p>
 
-### 📊 Satellite Imagery & NDVI Trends
-<img src="assets/screenshots/3.png" alt="NDVI Trends Chart" width="800">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+#### 📊 Satellite Imagery & NDVI Trends
+<img src="assets/screenshots/3.png" alt="NDVI Trends Chart" width="100%">
 <p><em>Satellite imagery visualization with NDVI trend analysis and temporal data charts</em></p>
 
-### 🌿 Ecological Insights & Biodiversity
-<img src="assets/screenshots/4.png" alt="Ecological Insights" width="800">
+</td>
+<td width="50%">
+
+#### 🌿 Ecological Insights & Biodiversity
+<img src="assets/screenshots/4.png" alt="Ecological Insights" width="100%">
 <p><em>Comprehensive ecological insights including biodiversity indicators and climate change impact assessment</em></p>
 
-### 🎯 Decision Support Systems
-<img src="assets/screenshots/5.png" alt="Decision Support" width="800">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+#### 🎯 Decision Support Systems
+<img src="assets/screenshots/5.png" alt="Decision Support" width="100%">
 <p><em>Actionable decision support for agricultural planning, conservation actions, and health alert systems</em></p>
 
-### 🤖 Agentic AI Assistant
-<img src="assets/screenshots/6.png" alt="AI Chatbot" width="800">
+</td>
+<td width="50%">
+
+#### 🤖 Agentic AI Assistant
+<img src="assets/screenshots/6.png" alt="AI Chatbot" width="100%">
 <p><em>Intelligent AI chatbot that queries forecasts, searches online insights, and accesses research papers</em></p>
+
+</td>
+</tr>
+</table>
 
 </div>
 
@@ -201,18 +264,6 @@ Each repository contains detailed setup instructions:
 - **Phenological research** with automated data collection
 - **Climate correlation studies** across multiple datasets
 - **Species distribution modeling** enhancement
-
----
-
-## 🏆 NASA Space Apps Challenge 2025
-
-**Challenge**: [BloomWatch: An Earth Observation Application for Global Flowering Phenology](https://www.spaceappschallenge.org/2025/challenges/bloomwatch-an-earth-observation-application-for-global-flowering-phenology/)
-
-**Team**: [Ganespace](https://www.spaceappschallenge.org/2025/find-a-team/ganespace/)
-
-**Location**: [Bandung, Indonesia](https://www.spaceappschallenge.org/2025/local-events/bandung/)
-
-**Mission**: *Harness the power of NASA Earth observation data to develop a tool that monitors and visualizes plant blooming events across the globe, directly addressing vegetation monitoring, prediction, and management needs.*
 
 ---
 
