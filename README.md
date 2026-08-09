@@ -31,7 +31,7 @@ Bloomee is an interactive Earth-observation platform that **detects, visualizes,
 <td width="50%">
 
 <a href="https://drive.google.com/file/d/1uRHJuCOsljoKuxdpxp8OgjSraQDF4ZUH/preview">
-<img src="assets/video_placeholder.png" alt="Bloomee Project Showcase Video" width="100%">
+<img src="assets/demo.gif" alt="Bloomee Project Showcase Video" width="100%">
 </a>
 <p><em>🎥 Watch the project showcase video</em></p>
 
