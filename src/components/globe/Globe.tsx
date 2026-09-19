@@ -9,6 +9,14 @@ import { calculateBloomIntensity, pointToLatLng } from '@/lib/bloomUtils'
 import { intensityToColor } from '@/lib/colorMapping'
 import { normalizeCoordinates } from '@/lib/bloomingApi'
 
+// Globe geometries are constant for the lifetime of the page, so they are allocated once at
+// module scope rather than per mount. pointsGeo alone is ~293k triangles / 878k vertices
+// (~27 MB of GPU buffers); React StrictMode double-mounts in dev and Fast Refresh remounts
+// repeatedly, and r3f never disposes geometry passed as a `geometry={...}` prop, so a
+// per-component instance leaked a fresh copy on every mount.
+const wireframeGeo = new THREE.IcosahedronGeometry(1, 16)
+const pointsGeo = new THREE.IcosahedronGeometry(1, 120)
+
 // Starfield component
 function Starfield() {
   const starSprite = useTexture('/textures/circle.png')
@@ -58,6 +66,14 @@ function Starfield() {
     
     return new THREE.Points(geo, mat)
   }, [starSprite])
+
+  // r3f never disposes <primitive> objects ("their state may be kept outside of React"), so
+  // the geometry and material must be released manually or they leak on every remount.
+  // starSprite is NOT disposed: it lives in drei's shared useTexture cache.
+  useEffect(() => () => {
+    points.geometry.dispose()
+    ;(points.material as THREE.Material).dispose()
+  }, [points])
 
   return <primitive object={points} />
 }
@@ -292,10 +308,8 @@ function EarthGlobe() {
     }
   `
 
-  // Create geometries - EXACT from original vertex-earth
-  const wireframeGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 16), [])
-  const pointsGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 120), [])
-  
+  // Geometries are module-level singletons (see top of file) - EXACT from original vertex-earth
+
   // Create materials - EXACT from original vertex-earth
   const wireframeMat = useMemo(() => new THREE.MeshBasicMaterial({ 
     color: 0x0099ff,
@@ -310,6 +324,11 @@ function EarthGlobe() {
     fragmentShader,
     transparent: true
   }), [uniforms, vertexShader, fragmentShader])
+
+  // r3f only disposes child instances, never objects passed as `material={...}` props, so
+  // these must be released manually. Textures are owned by drei's cache and left alone.
+  useEffect(() => () => { wireframeMat.dispose() }, [wireframeMat])
+  useEffect(() => () => { pointsMat.dispose() }, [pointsMat])
 
   // Update uniforms when currentDate or bloomMode changes
   useEffect(() => {
@@ -601,6 +620,8 @@ function EarthGlobe() {
     })
   }, [oceanTexture])
 
+  useEffect(() => () => { oceanMat.dispose() }, [oceanMat])
+
   return (
     <group ref={globeGroupRef}>
       {/* Wireframe globe - dengan pointer handlers */}
@@ -653,7 +674,10 @@ export default function Globe({ className }: GlobeProps) {
             near: 0.1,
             far: 1000
           }}
-          gl={{ antialias: true }}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          // Default is [1, 2]; on a HiDPI display that is 4x the framebuffer pixels. Capping
+          // this cuts peak GPU memory without touching geometry detail.
+          dpr={[1, 1.5]}
           style={{ 
             background: 'black',
             cursor: 'inherit' // Let parent handle cursor
