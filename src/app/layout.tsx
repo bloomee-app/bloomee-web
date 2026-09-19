@@ -103,6 +103,16 @@ export default function RootLayout({
           }}
         />
 
+        {/*
+          The globe fetches these from JS, so they are invisible to crawlers and archivers and
+          never get captured. Naming them in the HTML both fixes that and shortens first paint.
+        */}
+        <link rel="preload" as="image" href="/textures/00_earthmap1k.jpg" />
+        <link rel="preload" as="image" href="/textures/01_earthbump1k.jpg" />
+        <link rel="preload" as="image" href="/textures/02_earthspec1k.jpg" />
+        <link rel="preload" as="image" href="/textures/04_rainbow1k.jpg" />
+        <link rel="preload" as="image" href="/textures/circle.png" />
+
         <Script
           src="https://stat.faizath.com/script.js"
           data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
