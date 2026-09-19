@@ -5,6 +5,15 @@ import Script from "next/script";
 
 const inter = Inter({ subsets: ['latin'] })
 
+// The canonical origin follows the domain migration, so it comes from the same variable the
+// host redirect in src/middleware.ts uses - otherwise og:url and the canonical tag would keep
+// naming a domain we actively redirect visitors away from.
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN
+if (!BASE_DOMAIN) {
+  throw new Error('NEXT_PUBLIC_BASE_DOMAIN is not set; page metadata has no canonical origin')
+}
+const BASE_URL = `https://${BASE_DOMAIN}`
+
 export const metadata: Metadata = {
   title: {
     default: 'Bloomee - Visualizing Earth\'s Bloom Events',
@@ -40,7 +49,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://bloomee.earth',
+    url: BASE_URL,
     siteName: 'Bloomee',
     title: 'Bloomee - Visualizing Earth\'s Bloom Events',
     description: 'Turning satellite data into ecological insight. An interactive 3D platform for tracking and analyzing global bloom events using NASA Earth observation data.',
@@ -72,7 +81,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
   },
   manifest: '/manifest.json',
-  metadataBase: new URL('https://bloomee.earth'),
+  metadataBase: new URL(BASE_URL),
   alternates: {
     canonical: '/',
   },
