@@ -177,3 +177,10 @@ body.cursor-grabbing {
   background-color: rgba(255, 255, 255, 0.5); 
 }
 
+
+/* Paired with the pre-paint script in src/app/layout.tsx. The migration notice is rendered on
+   the server so it survives in archives and with JS disabled; this hides it for visitors who
+   already dismissed it, before React mounts and removes the node. */
+html[data-migration-notice-dismissed='true'] [data-migration-notice] {
+  display: none;
+}

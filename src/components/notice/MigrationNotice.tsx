@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+// Kept in sync by hand with the pre-paint script in src/app/layout.tsx, which cannot import
+// from here because it has to run as an inline <script> before React mounts.
 const DISMISSED_KEY = 'bloome-migration-notice-dismissed'
 
 type MigrationRow = {
@@ -57,17 +59,17 @@ interface MigrationNoticeProps {
 }
 
 export default function MigrationNotice({ className }: MigrationNoticeProps) {
-  // Start hidden so the server-rendered markup matches the first client render. The stored
-  // value is read after mount instead, which avoids both a hydration mismatch and a flash of
-  // the card for users who already dismissed it.
-  const [visible, setVisible] = useState(false)
+  // Start visible so the notice is present in the server-rendered HTML, which is what survives
+  // in environments that never run our JS: Wayback captures, no-JS readers, or a build where a
+  // chunk fails to load. Dismissed visitors are handled before first paint by the inline script
+  // in src/app/layout.tsx, so flipping this to false below removes the node without a flash.
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(DISMISSED_KEY) !== 'true') setVisible(true)
+      if (localStorage.getItem(DISMISSED_KEY) === 'true') setVisible(false)
     } catch {
-      // Private mode or blocked storage - still show the notice.
-      setVisible(true)
+      // Private mode or blocked storage - leave the notice visible.
     }
   }, [])
 
@@ -86,6 +88,7 @@ export default function MigrationNotice({ className }: MigrationNoticeProps) {
     <div
       role="region"
       aria-label="Domain migration notice"
+      data-migration-notice=""
       className={cn('w-[min(92vw,34rem)]', className)}
     >
       {/*

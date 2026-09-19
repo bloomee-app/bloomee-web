@@ -87,6 +87,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/*
+          Runs synchronously before first paint so visitors who already dismissed the migration
+          notice never see the server-rendered copy flash. The notice itself now renders on the
+          server (see src/components/notice/MigrationNotice.tsx) so that it survives anywhere
+          our JS does not run - Wayback captures in particular - and React removes the node
+          shortly after mount. The storage key is duplicated here on purpose: an inline script
+          cannot import DISMISSED_KEY.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('bloome-migration-notice-dismissed')==='true')" +
+              "document.documentElement.dataset.migrationNoticeDismissed='true'}catch{}",
+          }}
+        />
+
         <Script
           src="https://stat.faizath.com/script.js"
           data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
