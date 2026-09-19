@@ -1,4 +1,20 @@
 <div align="center">
+  <table border="1">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <h3>📢 Domain & Email Migration Notice</h3>
+        <p>From <b>October 4 th, 2026</b>, Bloomee will transition to new domains as <code>bloomee.earth</code> will not be renewed:</p>
+        <p>🌐 <b>Website:</b> <a href="https://bloomee.faizath.com">bloomee.faizath.com</a> (formerly <i>bloomee.earth</i>)<br>
+        ⚙️ <b>AI Service:</b> <a href="https://bloomee-ai.faizath.com">bloomee-ai.faizath.com</a> (formerly <i>ai.bloomee.earth</i>)<br>
+        📧 <b>Email:</b> <a href="mailto:contact@bloomee.faizath.com">contact@bloomee.faizath.com</a> (formerly <i>contact@bloomee.earth</i>)<br>
+        📈 <b>Status Pages:</b> <a href="https://status.faizath.com/status/bloomee">https://status.faizath.com/status/bloomee</a> (formerly <i>status.bloomee.earth</i>)
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="center">
   <img src="assets/logo.png" alt="Bloomee Logo"/>
   
   # 🌸 Bloomee
