@@ -793,7 +793,16 @@ export const AVAILABLE_REGIONS: RegionInfo[] = [
   { id: 'chile_patagonia', name: 'Chile Patagonia', lat: -46.0000, lng: -100.5000, threshold: 2000 }
 ]
 
-const API_BASE_URL = 'https://ai.bloomee.earth'
+// The AI service host moves with the domain migration, so it must never be baked into the
+// source. An unset value is a deploy misconfiguration rather than something to paper over:
+// failing here beats shipping a bundle that fetches https://undefined/.
+const AI_HOST = process.env.NEXT_PUBLIC_AI_HOST
+if (!AI_HOST) {
+  throw new Error('NEXT_PUBLIC_AI_HOST is not set; the blooming API has no host to call')
+}
+const API_BASE_URL = AI_HOST.startsWith('http')
+  ? AI_HOST.replace(/\/+$/, '')
+  : `https://${AI_HOST}`
 
 // Add CORS and production-ready headers
 const DEFAULT_HEADERS = {
