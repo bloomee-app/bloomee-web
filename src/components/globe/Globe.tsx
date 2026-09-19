@@ -1,8 +1,8 @@
 'use client'
 
 import { useRef, useMemo, Suspense, useEffect } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, useTexture } from '@react-three/drei'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls, useTexture, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { useAppStore } from '@/lib/store'
 import { calculateBloomIntensity, pointToLatLng } from '@/lib/bloomUtils'
@@ -13,7 +13,7 @@ import { normalizeCoordinates } from '@/lib/bloomingApi'
 // module scope rather than per mount. pointsGeo alone is ~293k triangles / 878k vertices
 // (~27 MB of GPU buffers); React StrictMode double-mounts in dev and Fast Refresh remounts
 // repeatedly, and r3f never disposes geometry passed as a `geometry={...}` prop, so a
-// per-component instance leaked a fresh copy on every mount.
+// per-component instance leaked a fresh copy on every mount until the WebGL context was lost.
 const wireframeGeo = new THREE.IcosahedronGeometry(1, 16)
 const pointsGeo = new THREE.IcosahedronGeometry(1, 120)
 
@@ -642,10 +642,42 @@ function EarthGlobe() {
   )
 }
 
-// Loading component for Suspense
+// Recovers from WebGL context loss. r3f registers no handlers of its own, and unless the
+// webglcontextlost event is cancelled the browser will never fire webglcontextrestored -
+// which is why a lost context previously left the globe permanently blank.
+function ContextLossRecovery() {
+  const gl = useThree((state) => state.gl)
+  const invalidate = useThree((state) => state.invalidate)
+
+  useEffect(() => {
+    const canvas = gl.domElement
+
+    const onLost = (event: Event) => {
+      event.preventDefault() // required, or the context is never restored
+      console.warn('WebGL context lost - waiting for restore')
+    }
+    const onRestored = () => {
+      console.warn('WebGL context restored')
+      invalidate()
+    }
+
+    canvas.addEventListener('webglcontextlost', onLost)
+    canvas.addEventListener('webglcontextrestored', onRestored)
+
+    return () => {
+      canvas.removeEventListener('webglcontextlost', onLost)
+      canvas.removeEventListener('webglcontextrestored', onRestored)
+    }
+  }, [gl, invalidate])
+
+  return null
+}
+
+// Loading overlay shown while textures load. This is a DOM element, so it cannot live inside
+// <Canvas> - it is layered over the canvas and driven by drei's useProgress instead.
 function GlobeLoading() {
   return (
-    <div className="flex items-center justify-center h-full">
+    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
     </div>
   )
@@ -658,17 +690,33 @@ interface GlobeProps {
 
 export default function Globe({ className }: GlobeProps) {
   const { cameraPosition } = useAppStore()
+  // useProgress is a plain zustand store, so it works outside <Canvas>.
+  const loading = useProgress((state) => state.active)
 
   return (
-    <div 
+    <div
       className={className}
       style={{
         cursor: 'default'
       }}
     >
-      <Suspense fallback={<GlobeLoading />}>
+      {/*
+        Inner wrapper gives the loading overlay a positioned containing block without
+        overriding the caller's className (which is what sizes this component).
+      */}
+      <div className="relative w-full h-full">
+        {loading && <GlobeLoading />}
+
+        {/*
+          The Suspense boundary MUST live inside <Canvas>. With it outside, a suspending
+          useTexture causes r3f's internal <Block> to set a never-resolving promise, which makes
+          CanvasImpl re-throw and suspend itself. That unmounts the whole <Canvas>, whose effect
+          cleanup calls unmountComponentAtNode() -> gl.forceContextLoss() on a 500ms timer. The
+          Canvas then remounts onto the SAME renderer, and the orphaned timer kills the live
+          context ("THREE.WebGLRenderer: Context Lost") with no way back.
+        */}
         <Canvas
-          camera={{ 
+          camera={{
             position: [0, 0, 4], // EXACT from original vertex-earth
             fov: 45,
             near: 0.1,
@@ -678,32 +726,37 @@ export default function Globe({ className }: GlobeProps) {
           // Default is [1, 2]; on a HiDPI display that is 4x the framebuffer pixels. Capping
           // this cuts peak GPU memory without touching geometry detail.
           dpr={[1, 1.5]}
-          style={{ 
+          style={{
             background: 'black',
             cursor: 'inherit' // Let parent handle cursor
           }}
         >
-          {/* Lighting */}
-          <hemisphereLight args={[0xffffff, 0x080820, 3]} />
-          
-          {/* Starfield */}
-          <Starfield />
-          
-          {/* Earth Globe */}
-          <EarthGlobe />
-          
-          {/* Orbit Controls */}
-          <OrbitControls 
-            enableDamping 
+          {/* Recover if the GPU drops the WebGL context */}
+          <ContextLossRecovery />
+
+          {/* Orbit Controls - outside Suspense so they survive texture loading */}
+          <OrbitControls
+            enableDamping
             dampingFactor={0.05}
             enableZoom={true}
             enablePan={true}
             enableRotate={true}
-            minDistance={2.5}  
-            maxDistance={22.0}  
+            minDistance={2.5}
+            maxDistance={22.0}
           />
+
+          <Suspense fallback={null}>
+            {/* Lighting */}
+            <hemisphereLight args={[0xffffff, 0x080820, 3]} />
+
+            {/* Starfield */}
+            <Starfield />
+
+            {/* Earth Globe */}
+            <EarthGlobe />
+          </Suspense>
         </Canvas>
-      </Suspense>
+      </div>
     </div>
   )
 }
