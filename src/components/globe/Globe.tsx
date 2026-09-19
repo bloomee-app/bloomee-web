@@ -360,8 +360,6 @@ function EarthGlobe() {
     const lat = (uv.y - 0.5) * 180  // FIXED: Changed from (0.5 - uv.y) to (uv.y - 0.5)
     const lng = (uv.x - 0.5) * 360  // Convert u (0-1) to lng (-180 to 180)
     
-    // Debug logging to verify UV mapping
-    console.log(`🔍 UV Debug (FIXED): u=${uv.x.toFixed(4)}, v=${uv.y.toFixed(4)} → lat=${lat.toFixed(4)}, lng=${lng.toFixed(4)}`)
     
     return { lat, lng }
   }
@@ -379,7 +377,6 @@ function EarthGlobe() {
 
     // Store click data in ref untuk digunakan di pointer up
     clickDataRef.current = clickData
-    console.log('🖱️ Pointer down - storing click data')
   }
 
   // Pointer up handler - proses click jika tidak ada drag
@@ -392,10 +389,7 @@ function EarthGlobe() {
 
     // Process click if we have data and no drag was detected
     if (clickDataRef.current && !isDraggingRef.current) {
-      console.log('🖱️ Processing click on pointer up')
       processGlobeClick(clickDataRef.current)
-    } else if (isDraggingRef.current) {
-      console.log('🖱️ Click ignored due to drag')
     }
 
     // Clear stored data
@@ -411,10 +405,6 @@ function EarthGlobe() {
     const rawCoords = uvToLatLng(clickData.uv)
     const { lat, lng } = normalizeCoordinates(rawCoords.lat, rawCoords.lng)
 
-    console.log(`🌍 Globe clicked at: ${lat.toFixed(4)}°, ${lng.toFixed(4)}° (UV-based coordinates)`)
-    console.log(`   UV coordinates: u=${clickData.uv.x.toFixed(4)}, v=${clickData.uv.y.toFixed(4)}`)
-    console.log(`   Raw coords: ${rawCoords.lat.toFixed(4)}°, ${rawCoords.lng.toFixed(4)}°`)
-    console.log(`   Normalized: ${lat.toFixed(4)}°, ${lng.toFixed(4)}°`)
 
     // Update store dengan koordinat yang diklik
     setSelectedLocation({ lat, lng })
@@ -425,7 +415,6 @@ function EarthGlobe() {
     setIsLandsatModalOpen(true) // Open Landsat Modal
     setLandsatModalMinimized(false) // Ensure Landsat Modal is not minimized
     
-    console.log('🌍 Globe click: Opening both panels for location:', { lat, lng })
   }
 
   // Animation loop - EXACT from original vertex-earth
@@ -461,13 +450,11 @@ function EarthGlobe() {
         
         if (totalDelta > dragThreshold && !isDraggingRef.current) {
           isDraggingRef.current = true
-          console.log('🖱️ Drag detected - preventing click events')
           
           // Cancel any pending click timeout
           if (clickTimeoutRef.current) {
             clearTimeout(clickTimeoutRef.current)
             clickTimeoutRef.current = null
-            console.log('🖱️ Click timeout cancelled due to drag')
           }
         }
       }
@@ -485,13 +472,11 @@ function EarthGlobe() {
       if (distance < earthRadius && !isDraggingRef.current) {
         if (!isHoveringRef.current) {
           isHoveringRef.current = true
-          console.log('🖱️ Cursor changed to pointer')
           document.body.className = 'cursor-pointer'
         }
       } else {
         if (isHoveringRef.current && !isDraggingRef.current) {
           isHoveringRef.current = false
-          console.log('🖱️ Cursor changed to default')
           document.body.className = ''
         }
       }
@@ -501,7 +486,6 @@ function EarthGlobe() {
       if (isHoveringRef.current) {
         // Store initial mouse position for drag detection
         dragStartPosRef.current = { x: evt.clientX, y: evt.clientY }
-        console.log('🖱️ Mouse down - tracking for drag detection')
         document.body.className = 'cursor-grabbing'
         
         // Clear any pending click timeout
@@ -518,10 +502,8 @@ function EarthGlobe() {
       dragStartPosRef.current = null
       
       if (isHoveringRef.current) {
-        console.log('🖱️ Cursor changed to pointer')
         document.body.className = 'cursor-pointer'
       } else {
-        console.log('🖱️ Cursor changed to default')
         document.body.className = ''
       }
     }
@@ -540,7 +522,6 @@ function EarthGlobe() {
       }
       
       document.body.className = ''
-      console.log('🖱️ Mouse left window - reset all states')
     }
 
     window.addEventListener('mousemove', handleMouseMove)
