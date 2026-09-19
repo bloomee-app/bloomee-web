@@ -89,6 +89,12 @@ function EarthGlobe() {
   const alphaMap = useTexture('/textures/02_earthspec1k.jpg')
   
   // Shader uniforms - EXACT from original vertex-earth with bloom support
+  //
+  // currentDate/bloomMode are intentionally NOT dependencies below. Including them rebuilt
+  // this object on every time-slider tick, which recreated pointsMat and forced a full GLSL
+  // recompile each time. The old ShaderMaterial was never disposed, so its GPU program
+  // leaked until the driver dropped the WebGL context ("THREE.WebGLRenderer: Context Lost").
+  // The effect further down keeps these uniform values current imperatively instead.
   const uniforms = useMemo(() => ({
     size: { value: 4.0 },
     colorTexture: { value: colorMap },
@@ -101,7 +107,7 @@ function EarthGlobe() {
     currentMonth: { value: currentDate.getMonth() }, // Month (0-11)
     currentDay: { value: currentDate.getDate() }, // Day of month
     bloomEnabled: { value: bloomMode ? 1.0 : 0.0 } // Enable bloom coloring
-  }), [colorMap, otherMap, elevMap, alphaMap, currentDate, bloomMode])
+  }), [colorMap, otherMap, elevMap, alphaMap]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vertex shader - EXACT from original vertex-earth with mouse interactivity
   const vertexShader = `
