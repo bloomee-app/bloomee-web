@@ -9,6 +9,7 @@ import { useAppStore } from '@/lib/store'
 import { AboutDialog } from '@/components/modal/AboutModal'
 import TimeSlider from '@/components/panel/Timeslider'
 import LandsatModal from '@/components/panels/LandsatModal'
+import MigrationNotice from '@/components/notice/MigrationNotice'
 import Image from 'next/image'
 
 // Temporary loading component
@@ -47,6 +48,9 @@ export default function HomePage() {
       <main className="relative h-screen w-screen overflow-hidden bg-black">
         {/* Globe Background - Full Screen */}
         <Globe className="absolute inset-0 z-0" />
+
+        {/* Domain migration notice - dismissable, top-center below the header */}
+        <MigrationNotice className="absolute top-24 left-1/2 -translate-x-1/2 z-40 pointer-events-auto" />
 
         {/* Landsat Panel - Now draggable */}
         <LandsatModal className="pointer-events-auto" />
