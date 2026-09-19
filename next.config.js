@@ -19,7 +19,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ['localhost'],
+    remotePatterns: [{ protocol: 'http', hostname: 'localhost' }],
     unoptimized: true, // For static export if needed
   },
   transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
